@@ -1,0 +1,6890 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Осенний участок</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:#fff6e5;
+  background:
+    linear-gradient(#7191a9 0%,#aab5ad 31%,#e9bd7c 66%,#d69a58 100%);
+}
+#game{position:fixed;inset:0}
+canvas{display:block}
+#sun{
+  position:fixed;right:14%;top:9%;width:90px;height:90px;border-radius:50%;
+  background:#fff3c7;box-shadow:0 0 85px 45px #ffd68c66;
+  pointer-events:none;opacity:.9
+}
+#vignette{
+  position:fixed;inset:0;pointer-events:none;
+  background:
+    linear-gradient(#0000 65%,#3e261829),
+    radial-gradient(circle at center,#0000 58%,#3c261637 100%);
+}
+#cross{
+  position:fixed;left:50%;top:50%;width:8px;height:8px;
+  border:1px solid #fff;border-radius:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 4px #000;pointer-events:none
+}
+#hud{
+  position:fixed;left:17px;top:17px;width:min(390px,calc(100vw - 34px));
+  padding:14px 16px;background:#2c231bdc;border:1px solid #e8c6908c;
+  border-radius:15px;backdrop-filter:blur(8px);box-shadow:0 10px 35px #24150c55;
+  pointer-events:none
+}
+#zone{font-size:20px;font-weight:750}
+#goal{font-size:12px;color:#f0d8b5;margin-top:3px}
+.bar{height:8px;background:#15100d;border-radius:20px;overflow:hidden;margin:10px 0 7px}
+.bar div{height:100%;width:0;background:linear-gradient(90deg,#b96532,#ffd070)}
+#stats{font-size:13px;line-height:1.55}
+#hint{
+  position:fixed;left:50%;bottom:91px;transform:translateX(-50%);
+  min-height:38px;max-width:min(760px,86vw);padding:9px 14px;
+  text-align:center;background:#2c221ade;border:1px solid #efca8b88;
+  border-radius:10px;pointer-events:none
+}
+#keys{
+  position:fixed;left:50%;bottom:15px;transform:translateX(-50%);
+  max-width:94vw;padding:8px 12px;text-align:center;font-size:11px;
+  background:#2b2119bd;border-radius:9px;color:#ffe8c3;pointer-events:none
+}
+#toast{
+  position:fixed;left:50%;top:17%;transform:translateX(-50%);
+  opacity:0;transition:.2s;padding:11px 16px;max-width:82vw;text-align:center;
+  background:#37281fe8;border:1px solid #f4d49d;border-radius:11px;
+  pointer-events:none
+}
+#intro{
+  position:fixed;z-index:20;inset:0;display:grid;place-items:center;
+  background:#20150e91
+}
+.card{
+  width:min(540px,calc(100vw - 30px));padding:27px;background:#34271e;
+  border:2px solid #d2aa72;border-radius:18px;text-align:center;
+  box-shadow:0 20px 80px #100a07bb
+}
+button{
+  font:inherit;cursor:pointer;border:1px solid #dfb579;border-radius:9px;
+  background:#efc486;color:#2b1d14;padding:9px 12px
+}
+button:hover:not(:disabled){background:#ffe0ad}
+button:disabled{opacity:.4;cursor:not-allowed}
+.panel{
+  display:none;position:fixed;z-index:30;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:min(720px,calc(100vw - 28px));max-height:82vh;overflow:auto;
+  background:#34271f;border:2px solid #d7ae76;border-radius:16px;
+  padding:20px;box-shadow:0 20px 85px #100a07db
+}
+.panel h2{margin-top:0}
+.row{
+  display:flex;justify-content:space-between;gap:14px;align-items:center;
+  padding:11px 0;border-top:1px solid #b8996e4a
+}
+.row small{color:#dac4a4}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:11px 0}
+.tabs .active{background:#aabd7f}
+.photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.photo{
+  min-height:100px;padding:10px;color:#392b20;border-radius:7px;
+  border:1px solid #b99462;background:#d6c095;
+  box-shadow:inset 0 0 0 5px #eee0bc
+}
+.photo.locked{filter:grayscale(1);opacity:.45}
+#devButtons{display:flex;flex-wrap:wrap;gap:8px}
+#devButtons button{flex:1 1 180px}
+</style>
+</head>
+<body>
+
+<div id="sun"></div>
+<div id="game"></div>
+<div id="vignette"></div>
+<div id="cross"></div>
+
+<div id="hud">
+  <div id="zone">Крыльцо</div>
+  <div id="goal"></div>
+  <div class="bar"><div id="progress"></div></div>
+  <div id="stats"></div>
+</div>
+
+<div id="hint"></div>
+
+<div id="keys">
+WASD — движение · мышь — обзор · Shift — бег · ЛКМ — работа ·
+E — взаимодействие/сдать · ПКМ/Q — бросить мешок ·
+1 руки · 2 грабли · 3 воздуходувка · Tab магазин · J журнал
+</div>
+
+<div id="toast"></div>
+
+<div id="intro">
+  <div class="card">
+    <h1>Осенний участок</h1>
+    <p>
+      Дом находится в центре большого участка. Убирай каждую часть территории,
+      сдавай листья в её контейнер и открывай следующую калитку.
+    </p>
+    <p>
+      В начале у тебя только руки. Грабли, воздуходувку и улучшения можно покупать
+      за заработанные монеты.
+    </p>
+    <button id="startBtn">Начать уборку</button>
+  </div>
+</div>
+
+<div id="shop" class="panel">
+  <h2>Лавка садовника</h2>
+  <p>Монеты: <b id="shopCoins">0</b></p>
+  <div id="shopRows"></div>
+  <button data-close>Закрыть · Tab</button>
+</div>
+
+<div id="journal" class="panel">
+  <h2>Полевой журнал</h2>
+  <div class="tabs">
+    <button data-tab="quests">Задания</button>
+    <button data-tab="photos">Фотографии</button>
+    <button data-tab="achievements">Достижения</button>
+  </div>
+  <div id="journalBody"></div>
+  <br>
+  <button data-close>Закрыть · J</button>
+</div>
+
+<div id="dev" class="panel">
+  <h2>Панель разработчика</h2>
+  <p>
+    Панель разработчика. Для активации нажмите клавишу D три раза подряд.
+  </p>
+  <div id="devButtons">
+    <button id="devCoins">+500 монет</button>
+    <button id="devEnergy">100% сил</button>
+    <button id="devFinish">Завершить текущую зону</button>
+    <button id="devAllGates">Открыть все калитки</button>
+    <button id="devTeleport">Телепорт в открытую зону</button>
+    <button id="devReset">Полный сброс</button>
+  </div>
+  <br>
+  <button data-close>Закрыть</button>
+</div>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js";
+
+/* =========================================================
+   МОБИЛЬНАЯ ПОДДЕРЖКА
+   ========================================================= */
+
+// Определение мобильного устройства
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                 ('ontouchstart' in window) ||
+                 (navigator.maxTouchPoints > 0);
+
+const isTablet = isMobile && (window.innerWidth >= 768 || window.innerHeight >= 768);
+
+// Глобальные переменные для touch-управления
+const mobile = {
+  joystick: { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 },
+  camera: { active: false, startX: 0, startY: 0, lastX: 0, lastY: 0 },
+  sensitivity: isTablet ? 0.003 : 0.004
+};
+
+console.log(`Device: ${isMobile ? 'Mobile' : 'Desktop'}${isTablet ? ' (Tablet)' : ''}`);
+
+/* =========================================================
+   КАРТА
+   ========================================================= */
+
+const ZONES = [
+  {
+    number:1,name:"Большое крыльцо",
+    x1:3,x2:15,z1:-7,z2:6,
+    leaves:125,bin:[12.9,3.9],
+    ground:0x788750
+  },
+  {
+    number:2,name:"Сарай-мастерская",
+    x1:15,x2:29,z1:-7,z2:6,
+    leaves:135,bin:[16.7,3.9],
+    ground:0x817a55
+  },
+  {
+    number:4,name:"Боковой сад",
+    x1:15,x2:29,z1:6,z2:15,
+    leaves:110,bin:[26.5,12.5],
+    ground:0x718454
+  },
+  {
+    number:5,name:"Баскетбольная площадка",
+    x1:-9,x2:15,z1:6,z2:15,
+    leaves:150,bin:[11.8,12.5],
+    ground:0x867b5c
+  },
+  {
+    number:6,name:"Задний двор",
+    x1:-23,x2:-9,z1:-7,z2:10,
+    leaves:155,bin:[-20.4,7.2],
+    ground:0x66804b
+  },
+  {
+    number:7,name:"Подвал",
+    x1:-39,x2:-26,z1:-5,z2:9,
+    leaves:115,bin:[-28.0,6.5],
+    ground:0x686257
+  },
+  {
+    number:8,name:"Бассейн",
+    x1:-23,x2:-9,z1:-19,z2:-7,
+    leaves:140,bin:[-20.4,-16.0],
+    ground:0x708676
+  },
+  {
+    number:9,name:"Гриль-зона",
+    x1:-9,x2:4,z1:-19,z2:-7,
+    leaves:145,bin:[-6.6,-16],
+    ground:0x786d50
+  },
+  {
+    number:10,name:"Теплица",
+    x1:4,x2:15,z1:-19,z2:-7,
+    leaves:150,bin:[12.2,-16],
+    ground:0x718553
+  }
+];
+
+/*
+  ВАЖНО:
+  needs — зона, которую необходимо полностью СДАТЬ,
+  чтобы створки открылись.
+
+  После подвала игрок возвращается в задний двор.
+  Отдельная калитка задний двор -> бассейн находится на z=-7.
+*/
+const GATES = [
+  {a:0,b:1,axis:"x",at:15,mid:0.3,width:3.4,needs:0,label:"САРАЙ"},
+  {a:1,b:2,axis:"z",at:6,mid:17.3,width:3.4,needs:1,label:"БОКОВОЙ САД"},
+  {a:2,b:3,axis:"x",at:15,mid:10.7,width:3.4,needs:2,label:"ПЛОЩАДКА"},
+  {a:3,b:4,axis:"x",at:-9,mid:7.8,width:3.4,needs:3,label:"ЗАДНИЙ ДВОР"},
+
+  /* специально открывается ПОСЛЕ завершения подвала */
+  {a:4,b:6,axis:"z",at:-7,mid:-16,width:3.5,needs:5,label:"БАССЕЙН"},
+
+  {a:6,b:7,axis:"x",at:-9,mid:-13,width:3.4,needs:6,label:"ГРИЛЬ"},
+  {a:7,b:8,axis:"x",at:4,mid:-13,width:3.4,needs:7,label:"ТЕПЛИЦА"}
+];
+
+const PHOTO_INFO = [
+  {zone:0,name:"Старая фотография на перилах",x:6.0,z:3.45,y:1.25}, // На верхней планке перил (1.30)
+  {zone:1,name:"Фотография у инструментов",x:24.0,z:-4.15,y:1.25}, // На столе в сарае
+  {zone:3,name:"Фото за баскетбольным щитом",x:-3.4,z:12.35,y:2.65}, // Прислонено к низу щита (2.70)
+  {zone:4,name:"Фото на спинке садовой лавки",x:-19.0,z:-3.25,y:1.30}, // На верху спинки (1.34)
+  {zone:5,name:"Фото на подвальной полке",x:-34.7,z:5.55,y:1.55}, // На верхней полке стеллажа
+  {zone:6,name:"Фото у стойки бассейна",x:-19.7,z:-9.55,y:.71}, // На столике у лежака (0.71)
+  {zone:7,name:"Фото на столике гриль-зоны",x:-2.2,z:-15.1,y:.78}, // На столе у гриля (0.78)
+  {zone:8,name:"Фото на полке теплицы",x:11.4,z:-9.0,y:.95}  // На полке теплицы
+];
+
+/* =========================================================
+   СОХРАНЕНИЕ
+   ========================================================= */
+
+const SAVE_KEY="autumn_estate_v3";
+
+function newSave(){
+  return {
+    coins:0,
+    deposited:Array(ZONES.length).fill(0),
+    pickedByZone:Array(ZONES.length).fill(0),
+    photos:Array(8).fill(false),
+    upgrades:{
+      rake:0,
+      rakeWidth:0,
+      blower:0,
+      collector:0,
+      bag:0
+    },
+    totalDeposited:0
+  };
+}
+
+let save;
+
+try{
+  const raw=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");
+  save=raw ? {...newSave(),...raw} : newSave();
+
+  save.upgrades={...newSave().upgrades,...(save.upgrades||{})};
+
+  if(!Array.isArray(save.deposited)||save.deposited.length!==ZONES.length)
+    save.deposited=Array(ZONES.length).fill(0);
+
+  if(!Array.isArray(save.pickedByZone)||save.pickedByZone.length!==ZONES.length)
+    save.pickedByZone=Array(ZONES.length).fill(0);
+
+  if(!Array.isArray(save.photos)||save.photos.length!==8)
+    save.photos=Array(8).fill(false);
+}catch{
+  save=newSave();
+}
+
+function store(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+  }catch{}
+}
+
+function completed(i){
+  return save.deposited[i]>=ZONES[i].leaves;
+}
+
+/*
+  Последовательность открытия.
+  Подвал (5) завершён -> доступен бассейн (6).
+*/
+function unlockedIndex(){
+  let i=0;
+  while(i<ZONES.length-1 && completed(i)) i++;
+  return i;
+}
+
+/* =========================================================
+   THREE.JS
+   ========================================================= */
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0xa99d7f,.0105);
+
+const camera=new THREE.PerspectiveCamera(
+  72,
+  innerWidth/innerHeight,
+  .06,
+  190
+);
+camera.rotation.order="YXZ";
+
+const renderer=new THREE.WebGLRenderer({
+  antialias:true,
+  alpha:true,
+  powerPreference:"high-performance"
+});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.48;
+
+document.querySelector("#game").appendChild(renderer.domElement);
+
+/* =========================================================
+   СВЕТ
+   ========================================================= */
+
+scene.add(new THREE.HemisphereLight(
+  0xc7dcf0,
+  0x745034,
+  2.25
+));
+
+const sunLight=new THREE.DirectionalLight(0xffd09a,3.05);
+sunLight.position.set(-24,34,-30);
+sunLight.castShadow=true;
+sunLight.shadow.mapSize.set(2048,2048);
+sunLight.shadow.camera.left=-60;
+sunLight.shadow.camera.right=60;
+sunLight.shadow.camera.top=55;
+sunLight.shadow.camera.bottom=-55;
+sunLight.shadow.normalBias=.025;
+scene.add(sunLight);
+
+/* =========================================================
+   МАТЕРИАЛЫ
+   ========================================================= */
+
+function material(color,rough=1,metal=.0){
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness:rough,
+    metalness:metal
+  });
+}
+
+const MAT={
+  white:material(0xe4d5bb),
+  plaster:material(0xd0b996),
+  timber:material(0x755139),
+  timber2:material(0xa7754b),
+  darkWood:material(0x473127),
+  roof:material(0x684738),
+  roof2:material(0x4d3931),
+  stone:material(0xaa9d84),
+  paving:material(0xa4967c),
+  asphalt:material(0x6b685f),
+  soil:material(0x6e5334),
+  metal:material(0x717975,.55,.4),
+  darkMetal:material(0x303a39,.48,.55),
+  red:material(0x9c4536),
+  orange:material(0xb76731),
+  yellow:material(0xd3a241),
+  green:material(0x546d45),
+  darkGreen:material(0x3d5338),
+  black:material(0x292827),
+  blue:material(0x4f7188),
+  glass:new THREE.MeshStandardMaterial({
+    color:0x9accc3,
+    roughness:.15,
+    metalness:.08,
+    transparent:true,
+    opacity:.46,
+    side:THREE.DoubleSide
+  }),
+  water:new THREE.MeshStandardMaterial({
+    color:0x398ca8,
+    roughness:.15,
+    metalness:.2,
+    transparent:true,
+    opacity:.82
+  })
+};
+
+const LEAF_MATS=[
+  0xb8642c,
+  0xd58c30,
+  0xe0a63d,
+  0x98482b,
+  0x85532b,
+  0xc47a27
+].map(c=>material(c,1));
+
+/* =========================================================
+   БАЗОВЫЕ ОБЪЕКТЫ
+   ========================================================= */
+
+function mesh(geo,mat,x=0,y=0,z=0,parent=scene){
+  const m=new THREE.Mesh(geo,mat);
+  m.position.set(x,y,z);
+  m.castShadow=true;
+  m.receiveShadow=true;
+  parent.add(m);
+  return m;
+}
+
+function box(w,h,d,mat,x,y,z,parent=scene){
+  return mesh(new THREE.BoxGeometry(w,h,d),mat,x,y,z,parent);
+}
+
+function cylinder(rt,rb,h,mat,x,y,z,segments=10,parent=scene){
+  return mesh(
+    new THREE.CylinderGeometry(rt,rb,h,segments),
+    mat,x,y,z,parent
+  );
+}
+
+function sphere(r,mat,x,y,z,parent=scene){
+  return mesh(
+    new THREE.IcosahedronGeometry(r,1),
+    mat,x,y,z,parent
+  );
+}
+
+function ground(w,d,mat,x,y,z){
+  const p=mesh(new THREE.PlaneGeometry(w,d),mat,x,y,z);
+  p.rotation.x=-Math.PI/2;
+  p.castShadow=false;
+  return p;
+}
+
+/* =========================================================
+   КОЛЛИЗИИ
+   ========================================================= */
+
+const obstacles=[];
+
+function addObstacle(x,z,rx,rz){
+  obstacles.push({x,z,rx,rz});
+}
+
+function blockedByObject(x,z,r=.35){
+  for(const o of obstacles){
+    if(
+      Math.abs(x-o.x)<o.rx+r &&
+      Math.abs(z-o.z)<o.rz+r
+    ) return true;
+  }
+  return false;
+}
+
+function propBox(
+  w,h,d,mat,x,y,z,
+  collision=true,
+  parent=scene
+){
+  const m=box(w,h,d,mat,x,y,z,parent);
+  if(collision && parent===scene)
+    addObstacle(x,z,w/2,d/2);
+  return m;
+}
+
+/* =========================================================
+   ТЕКСТОВЫЕ ТАБЛИЧКИ
+   ========================================================= */
+
+function signSprite(
+  text,
+  width=2.4,
+  height=.45,
+  foreground="#fff0cf",
+  background="#513824"
+){
+  const canvas=document.createElement("canvas");
+  canvas.width=640;
+  canvas.height=128;
+
+  const ctx=canvas.getContext("2d");
+
+  ctx.fillStyle=background;
+  ctx.fillRect(0,0,640,128);
+
+  ctx.strokeStyle="#d6ae70";
+  ctx.lineWidth=8;
+  ctx.strokeRect(4,4,632,120);
+
+  ctx.fillStyle=foreground;
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.font="700 38px system-ui";
+
+  ctx.fillText(text,320,65,605);
+
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+
+  const sprite=new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map:texture,
+      transparent:true,
+      depthWrite:false
+    })
+  );
+
+  sprite.scale.set(width,height,1);
+  return sprite;
+}
+
+/* =========================================================
+   ТРАВА / ЗЕМЛЯ
+   ========================================================= */
+
+function grassTexture(){
+  const c=document.createElement("canvas");
+  c.width=c.height=256;
+
+  const ctx=c.getContext("2d");
+  ctx.fillStyle="#788452";
+  ctx.fillRect(0,0,256,256);
+
+  let s=72813;
+  const rnd=()=>{
+    s=(s*1664525+1013904223)>>>0;
+    return s/4294967296;
+  };
+
+  for(let i=0;i<4200;i++){
+    const green=70+Math.floor(rnd()*55);
+    ctx.fillStyle=`rgba(${67+Math.floor(rnd()*35)},${green},${43+Math.floor(rnd()*27)},${.08+rnd()*.2})`;
+    ctx.fillRect(
+      rnd()*256,
+      rnd()*256,
+      1+rnd()*3,
+      1+rnd()*3
+    );
+  }
+
+  const tex=new THREE.CanvasTexture(c);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  tex.repeat.set(5.5,5.5);
+
+  return tex;
+}
+
+const grassMap=grassTexture();
+
+for(let i=0;i<ZONES.length;i++){
+  const z=ZONES[i];
+
+  let m;
+
+  if(i===5){
+    m=material(z.ground);
+  }else{
+    m=new THREE.MeshStandardMaterial({
+      color:z.ground,
+      map:grassMap,
+      roughness:1
+    });
+  }
+
+  ground(
+    z.x2-z.x1,
+    z.z2-z.z1,
+    m,
+    (z.x1+z.x2)/2,
+    -.025,
+    (z.z1+z.z2)/2
+  );
+}
+
+ground(
+  150,120,
+  material(0x5d714c),
+  -5,-.2,-5
+);
+
+/* Дальние холмы на горизонте - используем cylinder для конусов */
+for(let i=0;i<12;i++){
+  const angle=(i/12)*Math.PI*2;
+  const distance=75+Math.random()*20;
+  const hillX=Math.cos(angle)*distance;
+  const hillZ=Math.sin(angle)*distance;
+  const hillHeight=6+Math.random()*10;
+  const hillWidth=20+Math.random()*15;
+  
+  cylinder(
+    0,hillWidth,hillHeight,
+    material(i%2===0?0x6b7d4e:0x758856),
+    hillX,hillHeight/2-.3,hillZ,
+    12
+  );
+}
+
+/* Дальние простые деревья на горизонте */
+for(let i=0;i<20;i++){
+  const angle=Math.random()*Math.PI*2;
+  const distance=50+Math.random()*30;
+  const treeX=Math.cos(angle)*distance;
+  const treeZ=Math.sin(angle)*distance;
+  const scale=0.7+Math.random()*0.5;
+  
+  // Ствол
+  cylinder(
+    .3*scale,.25*scale,3.5*scale,
+    MAT.trunk,
+    treeX,1.75*scale,treeZ,
+    6
+  );
+  
+  // Крона (конус)
+  cylinder(
+    0,2.5*scale,5*scale,
+    material(0x8a7a4c),
+    treeX,5*scale,treeZ,
+    6
+  );
+}
+
+/* =========================================================
+   ДОМ В ЦЕНТРЕ
+   ========================================================= */
+
+function makeHouse(){
+
+  box(
+    15.5,5.1,11.3,
+    MAT.plaster,
+    -1.6,2.55,-.2
+  );
+
+  addObstacle(-1.6,-.2,7.75,5.65);
+
+  box(
+    15.85,.25,11.6,
+    MAT.darkWood,
+    -1.6,.12,-.2
+  );
+
+  /* крыша */
+
+  const roofA=box(
+    16.2,.34,7.1,
+    MAT.roof,
+    -1.6,6.05,-3.0
+  );
+  roofA.rotation.x=-.63;
+
+  const roofB=box(
+    16.2,.34,7.1,
+    MAT.roof,
+    -1.6,6.05,2.6
+  );
+  roofB.rotation.x=.63;
+
+  /* фронтоны */
+
+  for(const x of [-9.38,6.18]){
+    const geo=new THREE.BufferGeometry();
+
+    geo.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute([
+        x,5.1,-5.85,
+        x,7.3,-.2,
+        x,5.1,5.45
+      ],3)
+    );
+
+    geo.computeVertexNormals();
+
+    mesh(
+      geo,
+      new THREE.MeshStandardMaterial({
+        color:0xb79c76,
+        side:THREE.DoubleSide
+      })
+    );
+  }
+
+  /* окна */
+
+  for(const x of [-6.2,.8]){
+    for(const z of [-5.91,5.51]){
+      box(
+        1.35,1.45,.11,
+        MAT.darkWood,
+        x,2.8,z
+      );
+
+      box(
+        1.08,1.2,.14,
+        MAT.glass,
+        x,2.8,z+(z>0?.08:-.08)
+      );
+
+      box(.06,1.16,.16,MAT.white,x,2.8,z);
+      box(1.12,.06,.16,MAT.white,x,2.8,z);
+    }
+  }
+
+  /* труба */
+
+  box(
+    .85,2.1,.85,
+    material(0x805748),
+    -5.7,6.0,-1.0
+  );
+
+  box(
+    1.03,.18,1.03,
+    MAT.stone,
+    -5.7,7.06,-1.0
+  );
+}
+
+makeHouse();
+
+/* =========================================================
+   БОЛЬШОЕ КРЫЛЬЦО
+   ========================================================= */
+
+function makePorch(){
+
+  /* сама веранда */
+
+  box(
+    6.8,.3,5.15,
+    MAT.timber2,
+    9.3,.2,.4
+  );
+
+  /* ступени */
+
+  for(let i=0;i<3;i++){
+    box(
+      6.5,.16,.5,
+      MAT.timber2,
+      9.3,
+      .16-i*.045,
+      3.17+i*.38
+    );
+  }
+
+  /* крыша */
+
+  const roof=box(
+    7.35,.2,5.65,
+    MAT.roof,
+    9.3,3.38,.33
+  );
+  roof.rotation.x=.035;
+
+  /* стойки */
+
+  for(const x of [6.2,12.4]){
+    for(const z of [-1.85,2.7]){
+      box(
+        .21,3.0,.21,
+        MAT.timber,
+        x,1.62,z
+      );
+      addObstacle(x,z,.11,.11);
+    }
+  }
+
+  /* перила */
+
+  for(const x of [6.3,8.3,10.3,12.3]){
+    box(.13,1.0,.13,MAT.timber,x,.76,-1.95);
+    addObstacle(x,-1.95,.07,.07);
+  }
+
+  box(
+    6.15,.12,.13,
+    MAT.timber,
+    9.3,1.24,-1.95
+  );
+  addObstacle(9.3,-1.95,3.08,.07);
+
+  for(const z of [-.8,.8,2.25]){
+    box(
+      .13,1.0,.13,
+      MAT.timber,
+      12.4,.76,z
+    );
+    addObstacle(12.4,z,.07,.07);
+  }
+
+  box(
+    .13,.12,4.0,
+    MAT.timber,
+    12.4,1.24,.2
+  );
+  addObstacle(12.4,.2,.07,2.0);
+
+  /* входная дверь */
+
+  box(
+    1.7,2.65,.14,
+    MAT.darkWood,
+    5.98,1.52,.7
+  );
+
+  box(
+    .065,.065,.11,
+    MAT.metal,
+    6.62,1.3,.84
+  );
+
+  /* коврик */
+
+  ground(
+    2.0,1.2,
+    material(0x824632),
+    7.6,.36,1.4
+  );
+
+  /* стол */
+
+  propBox(
+    1.45,.14,.88,
+    MAT.timber2,
+    9.5,.78,.9,
+    true
+  );
+
+  for(const x of [8.95,10.05]){
+    box(
+      .12,.7,.12,
+      MAT.darkWood,
+      x,.42,.9
+    );
+  }
+
+  /* кресло */
+
+  propBox(
+    .75,.12,.72,
+    MAT.timber,
+    7.1,.52,-.95,
+    true
+  );
+
+  box(
+    .75,.95,.12,
+    MAT.timber,
+    7.1,.95,-1.25
+  );
+
+  for(const x of [6.82,7.38]){
+    box(.08,.55,.08,MAT.darkWood,x,.3,-.95);
+    addObstacle(x,-.95,.04,.04);
+  }
+
+  /* тыквы */
+
+  for(const [x,z,s] of [
+    [11.45,2.25,.28],
+    [11.0,2.4,.2],
+    [10.7,2.1,.16]
+  ]){
+    cylinder(
+      s,s*.88,s*.65,
+      MAT.orange,
+      x,s*.32,z,
+      10
+    );
+
+    cylinder(
+      .025,.03,.13,
+      MAT.darkGreen,
+      x,s*.75,z,
+      6
+    );
+  }
+
+  /* вазоны */
+
+  for(const [x,z] of [
+    [6.55,2.55],
+    [11.8,-1.25]
+  ]){
+    cylinder(
+      .27,.2,.45,
+      MAT.darkWood,
+      x,.23,z,
+      10
+    );
+
+    sphere(.32,MAT.green,x,.64,z);
+    sphere(.19,MAT.orange,x+.18,.72,z-.07);
+  }
+
+  /* дрова */
+
+  for(let i=0;i<7;i++){
+    const log=cylinder(
+      .09,.1,.65,
+      MAT.timber,
+      5.1+i*.17,
+      .23,
+      -2.55+(i%2)*.17,
+      8
+    );
+
+    log.rotation.z=Math.PI/2;
+  }
+
+  /* фонарь */
+
+  box(
+    .25,.35,.25,
+    material(0xffc671,.3,.2),
+    11.5,1.55,-1.82
+  );
+
+  box(
+    .32,.05,.32,
+    MAT.darkMetal,
+    11.5,1.75,-1.82
+  );
+}
+
+makePorch();
+
+/* =========================================================
+   САРАЙ-МАСТЕРСКАЯ
+   ========================================================= */
+
+function makeShed(){
+
+  const x1=18.3;
+  const x2=27.6;
+
+  const z1=-4.8;
+  const z2=3.8;
+
+  const cx=(x1+x2)/2;
+
+  /* пол */
+
+  box(
+    x2-x1+.2,.23,z2-z1+.2,
+    MAT.darkWood,
+    cx,.1,(z1+z2)/2
+  );
+
+  /*
+    Западная стена имеет БОЛЬШОЙ вход.
+    Игрок действительно может заходить внутрь.
+  */
+
+  propBox(
+    .22,3.45,2.6,
+    MAT.timber,
+    x1,1.77,z1+1.3
+  );
+
+  propBox(
+    .22,3.45,2.6,
+    MAT.timber,
+    x1,1.77,z2-1.3
+  );
+
+  propBox(
+    .22,3.45,z2-z1,
+    MAT.timber,
+    x2,1.77,(z1+z2)/2
+  );
+
+  propBox(
+    x2-x1,3.45,.22,
+    MAT.timber,
+    cx,1.77,z1
+  );
+
+  propBox(
+    x2-x1,3.45,.22,
+    MAT.timber,
+    cx,1.77,z2
+  );
+
+  /* деревянные планки */
+
+  for(let x=x1+.45;x<x2;x+=.55){
+    box(
+      .055,3.05,.05,
+      MAT.timber2,
+      x,1.72,z1+.14
+    );
+
+    box(
+      .055,3.05,.05,
+      MAT.timber2,
+      x,1.72,z2-.14
+    );
+  }
+
+  /* крыша */
+
+  const roofA=box(
+    10.1,.25,5.25,
+    MAT.roof,
+    cx,4.45,z1+2.08
+  );
+
+  roofA.rotation.x=-.39;
+
+  const roofB=box(
+    10.1,.25,5.25,
+    MAT.roof,
+    cx,4.45,z2-2.08
+  );
+
+  roofB.rotation.x=.39;
+
+  /* фронтоны */
+
+  for(const x of [x1,x2]){
+
+    const geo=new THREE.BufferGeometry();
+
+    geo.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute([
+        x,3.5,z1-.15,
+        x,5.28,(z1+z2)/2,
+        x,3.5,z2+.15
+      ],3)
+    );
+
+    geo.computeVertexNormals();
+
+    mesh(
+      geo,
+      new THREE.MeshStandardMaterial({
+        color:0x765039,
+        side:THREE.DoubleSide
+      })
+    );
+  }
+
+  /* входные балки */
+
+  for(const z of [
+    (z1+z2)/2-1.7,
+    (z1+z2)/2+1.7
+  ]){
+    box(
+      .25,3.8,.25,
+      MAT.darkWood,
+      x1,1.9,z
+    );
+  }
+
+  box(
+    .25,.3,3.65,
+    MAT.darkWood,
+    x1,3.48,(z1+z2)/2
+  );
+
+  /* вывеска */
+
+  const sign=signSprite(
+    "САРАЙ • МАСТЕРСКАЯ",
+    3.65,.46
+  );
+
+  sign.position.set(
+    17.95,4.1,(z1+z2)/2
+  );
+
+  scene.add(sign);
+
+  /*
+    ПРОБКОВАЯ ДОСКА
+  */
+
+  box(
+    3.0,1.45,.08,
+    material(0x9c6b42),
+    23.6,2.15,z1+.16
+  );
+
+  box(
+    3.25,.08,.11,
+    MAT.darkWood,
+    23.6,2.9,z1+.17
+  );
+
+  box(
+    3.25,.08,.11,
+    MAT.darkWood,
+    23.6,1.4,z1+.17
+  );
+
+  for(let i=0;i<6;i++){
+    box(
+      .28,.35,.025,
+      i%2?MAT.white:MAT.yellow,
+      22.55+(i%3)*.78,
+      1.8+Math.floor(i/3)*.62,
+      z1+.11
+    );
+  }
+
+  /*
+    НАСТЕННЫЕ ИНСТРУМЕНТЫ
+  */
+
+  function wallHandle(x,y=2.05){
+    box(
+      .065,1.65,.065,
+      MAT.timber2,
+      x,y,z1+.09
+    );
+  }
+
+  /* лопата */
+
+  wallHandle(19.1);
+
+  const shovel=box(
+    .4,.48,.07,
+    MAT.metal,
+    19.1,1.08,z1+.1
+  );
+
+  shovel.rotation.z=.08;
+
+  /* вилы */
+
+  wallHandle(20.15);
+
+  box(
+    .55,.08,.08,
+    MAT.metal,
+    20.15,1.28,z1+.1
+  );
+
+  for(let i=-2;i<=2;i++){
+    box(
+      .04,.34,.055,
+      MAT.metal,
+      20.15+i*.12,
+      1.11,
+      z1+.1
+    );
+  }
+
+  /* грабли */
+
+  wallHandle(21.3);
+
+  box(
+    .73,.09,.08,
+    MAT.metal,
+    21.3,1.35,z1+.1
+  );
+
+  for(let i=-3;i<=3;i++){
+    box(
+      .035,.27,.05,
+      MAT.metal,
+      21.3+i*.1,
+      1.18,z1+.1
+    );
+  }
+
+  /* метла */
+
+  wallHandle(22.25);
+
+  box(
+    .52,.3,.13,
+    MAT.orange,
+    22.25,1.25,z1+.11
+  );
+
+  /* секатор / ключи */
+
+  for(let i=0;i<4;i++){
+    box(
+      .08,.35,.06,
+      i%2?MAT.red:MAT.metal,
+      25.25+i*.38,
+      2.22-(i%2)*.25,
+      z1+.1
+    );
+  }
+
+  /*
+    ВЕРСТАК
+  */
+
+  propBox(
+    3.5,.18,1.0,
+    MAT.timber2,
+    24.8,.9,-2.9
+  );
+
+  for(const x of [23.35,26.25]){
+    box(
+      .15,.82,.15,
+      MAT.darkWood,
+      x,.46,-2.9
+    );
+  }
+
+  /* тиски */
+
+  box(
+    .5,.22,.32,
+    MAT.blue,
+    25.7,1.12,-2.95
+  );
+
+  box(
+    .09,.42,.09,
+    MAT.metal,
+    25.7,1.3,-2.95
+  );
+
+  /* банки на верстаке */
+
+  for(let i=0;i<7;i++){
+    cylinder(
+      .08,.08,.24,
+      [
+        MAT.red,
+        MAT.green,
+        MAT.metal,
+        MAT.yellow
+      ][i%4],
+      23.35+i*.36,
+      1.12,
+      -2.8,
+      8
+    );
+  }
+
+  /*
+    ПОЛКИ
+  */
+
+  // Вертикальные стойки для полок
+  for(const x of [24.8, 27.2]){
+    propBox(
+      0.1, 2.9, 0.42,
+      MAT.darkWood,
+      x, 1.45, 2.95
+    );
+  }
+
+  for(const y of [1.25,2.0,2.75]){
+    box(
+      2.4,.1,.42,
+      MAT.timber2,
+      26.0,y,2.95
+    );
+  }
+
+  for(let shelf=0;shelf<3;shelf++){
+    for(let i=0;i<5;i++){
+      cylinder(
+        .08,.08,.23,
+        [
+          MAT.red,
+          MAT.green,
+          MAT.yellow,
+          MAT.metal
+        ][(shelf+i)%4],
+        25.2+i*.38,
+        1.42+shelf*.75,
+        2.78,
+        8
+      );
+    }
+  }
+
+  /*
+    ЯЩИКИ
+  */
+
+  for(const [x,z] of [
+    [19.3,2.5],
+    [20.25,2.45],
+    [19.7,1.55],
+    [26.2,.4]
+  ]){
+    propBox(
+      .78,.65,.72,
+      MAT.timber2,
+      x,.36,z
+    );
+
+    box(
+      .82,.06,.76,
+      MAT.darkWood,
+      x,.7,z
+    );
+
+    box(
+      .45,.05,.02,
+      MAT.darkMetal,
+      x,.48,z-.37
+    );
+  }
+
+  /*
+    ВЕЛОСИПЕДНОЕ КОЛЕСО НА СТЕНЕ
+  */
+
+  const wheel=new THREE.Mesh(
+    new THREE.TorusGeometry(.55,.065,8,26),
+    MAT.black
+  );
+
+  wheel.position.set(
+    x2-.14,
+    1.85,
+    -.7
+  );
+
+  wheel.rotation.y=Math.PI/2;
+  scene.add(wheel);
+
+  for(let i=0;i<8;i++){
+    const spoke=box(
+      .03,.98,.025,
+      MAT.metal,
+      x2-.17,
+      1.85,
+      -.7
+    );
+
+    spoke.rotation.x=i*Math.PI/8;
+    spoke.rotation.z=Math.PI/2;
+  }
+
+  /*
+    ШЛАНГ НА СТЕНЕ
+  */
+
+  const hose=new THREE.Mesh(
+    new THREE.TorusGeometry(.45,.055,8,24),
+    MAT.green
+  );
+
+  hose.position.set(
+    x2-.15,
+    2.35,
+    1.25
+  );
+
+  hose.rotation.y=Math.PI/2;
+  scene.add(hose);
+
+  /*
+    ЛАМПА
+  */
+
+  box(
+    .36,.19,.36,
+    material(0xffd28a,.3),
+    22.7,3.25,0
+  );
+
+  /*
+    МЕШКИ / КАНИСТРЫ
+  */
+
+  for(const [x,z,c] of [
+    [18.95,-2.3,MAT.red],
+    [19.5,-2.2,MAT.green],
+    [20.0,-2.3,MAT.yellow]
+  ]){
+    box(
+      .38,.6,.3,
+      c,x,.32,z
+    );
+
+    box(
+      .18,.08,.12,
+      MAT.darkMetal,
+      x,.67,z
+    );
+  }
+}
+
+makeShed();
+
+/* =========================================================
+   ДОРОЖКИ
+   ========================================================= */
+
+function makePath(x,z,w,d){
+
+  ground(
+    w,d,
+    MAT.paving,
+    x,.01,z
+  );
+
+  for(let i=0;i<12;i++){
+
+    const px=
+      x-w/2+.25+
+      ((i*1.73)%(Math.max(.5,w-.5)));
+
+    const pz=
+      z-d/2+.25+
+      ((i*.93)%(Math.max(.5,d-.5)));
+
+    box(
+      .24,.025,.14,
+      MAT.stone,
+      px,.028,pz
+    ).castShadow=false;
+  }
+}
+
+makePath(13.9,.2,2.0,5.3);
+makePath(16.9,7.9,2.1,3.5);
+makePath(-10.3,8.0,2.3,2.5);
+
+/* =========================================================
+   ДЕРЕВЬЯ
+   ========================================================= */
+
+function makeTree(x,z,s=1){
+
+  cylinder(
+    .23*s,.35*s,3.0*s,
+    MAT.darkWood,
+    x,1.5*s,z,
+    8
+  );
+
+  const colors=[
+    0xb5652f,
+    0xd18c3a,
+    0xc2762e,
+    0x987039
+  ];
+
+  for(let i=0;i<6;i++){
+
+    const a=i*2.19;
+
+    sphere(
+      (.76+(i%3)*.12)*s,
+      material(colors[i%colors.length]),
+      x+Math.sin(a)*.52*s,
+      (3.15+(i%2)*.42)*s,
+      z+Math.cos(a)*.49*s
+    );
+  }
+
+  addObstacle(
+    x,z,
+    .36*s,.36*s
+  );
+}
+
+[
+  [4.3,-5.9,.8],
+  [13.7,-5.6,.73],
+  [28,-6,.78],
+  [27.5,13.8,.77],
+  [-6.4,13.5,.9],
+  [-21,8.8,.75],
+  [-21.8,-5.8,.76],
+  [-21.4,-18,.72],
+  [2.5,-17.8,.8],
+  [13.6,-17.8,.72],
+  [-30,8,.7]
+].forEach(v=>makeTree(...v));
+
+/* =========================================================
+   БОКОВОЙ САД
+   ========================================================= */
+
+for(let i=0;i<42;i++){
+
+  const x=
+    15.6+
+    ((i*4.71)%12.5);
+
+  const z=
+    6.5+
+    ((i*2.39)%7.6);
+
+  if(!blockedByObject(x,z,.35)){
+
+    cylinder(
+      .08,.1,.3,
+      MAT.darkWood,
+      x,.16,z,
+      5
+    );
+
+    sphere(
+      .25+(i%3)*.04,
+      i%5===0?MAT.orange:MAT.green,
+      x,.42,z
+    );
+  }
+}
+
+/* птичья ванна */
+
+cylinder(
+  .15,.25,.8,
+  MAT.stone,
+  22,.4,9,
+  10
+);
+
+cylinder(
+  .65,.55,.13,
+  MAT.stone,
+  22,.87,9,
+  18
+);
+
+addObstacle(22,9,.55,.55);
+
+/* садовая тачка */
+
+propBox(
+  1.25,.35,.65,
+  MAT.green,
+  24.5,.44,7.75
+);
+
+cylinder(
+  .25,.25,.14,
+  MAT.black,
+  23.85,.25,7.75,
+  12
+).rotation.z=Math.PI/2;
+
+box(
+  1.4,.06,.07,
+  MAT.metal,
+  25.3,.35,7.53
+);
+
+box(
+  1.4,.06,.07,
+  MAT.metal,
+  25.3,.35,7.97
+);
+
+/* =========================================================
+   БАСКЕТБОЛЬНАЯ ПЛОЩАДКА
+   ========================================================= */
+
+ground(
+  15.2,7.0,
+  material(0x957853),
+  1.8,.02,10.4
+);
+
+for(const x of [-5.9,10.7]){
+
+  cylinder(
+    .09,.09,3.45,
+    MAT.metal,
+    x,1.72,12.2
+  );
+
+  box(
+    1.45,.85,.1,
+    MAT.white,
+    x,3.13,12.2
+  );
+
+  const rim=new THREE.Mesh(
+    new THREE.TorusGeometry(.3,.03,8,24),
+    MAT.red
+  );
+
+  rim.position.set(
+    x,2.76,11.85
+  );
+
+  rim.rotation.x=Math.PI/2;
+  scene.add(rim);
+}
+
+/* мяч */
+
+sphere(
+  .25,
+  MAT.orange,
+  4.8,.25,8.1
+);
+
+addObstacle(4.8,8.1,.22,.22);
+
+/* скамья */
+
+propBox(
+  2.4,.18,.55,
+  MAT.timber2,
+  8.1,.55,7.0
+);
+
+box(
+  2.4,.75,.13,
+  MAT.timber,
+  8.1,.95,7.25
+);
+
+for(const x of [7.15,9.05]){
+  box(.13,.7,.13,MAT.darkMetal,x,.36,7.0);
+}
+
+/* =========================================================
+   ЗАДНИЙ ДВОР
+   ========================================================= */
+
+/* качели */
+
+for(const x of [-15.0,-11.7]){
+
+  box(
+    .17,2.9,.17,
+    MAT.darkWood,
+    x,1.45,6.2
+  );
+  addObstacle(x,6.2,.09,.09);
+}
+
+box(
+  3.55,.18,.18,
+  MAT.darkWood,
+  -13.35,2.85,6.2
+);
+addObstacle(-13.35,6.2,1.78,.09);
+
+for(const x of [-14.1,-12.6]){
+
+  box(
+    .025,1.55,.025,
+    MAT.metal,
+    x,1.82,6.2
+  );
+}
+
+box(
+  1.4,.12,.5,
+  MAT.timber2,
+  -13.35,.98,6.2
+);
+addObstacle(-13.35,6.2,.7,.25);
+
+/* лавка */
+
+propBox(
+  2.35,.16,.65,
+  MAT.timber2,
+  -19.0,.55,-3.25
+);
+
+box(
+  2.35,.78,.12,
+  MAT.timber,
+  -19.0,.95,-3.53
+);
+
+for(const x of [-19.85,-18.15]){
+  box(
+    .12,.72,.12,
+    MAT.darkMetal,
+    x,.35,-3.25
+  );
+}
+
+/* бочка */
+
+cylinder(
+  .45,.45,.95,
+  MAT.timber,
+  -20.4,.48,2.3,
+  12
+);
+
+cylinder(
+  .47,.47,.07,
+  MAT.darkMetal,
+  -20.4,.7,2.3,
+  12
+);
+
+cylinder(
+  .47,.47,.07,
+  MAT.darkMetal,
+  -20.4,.25,2.3,
+  12
+);
+
+addObstacle(-20.4,2.3,.55,.55); // Увеличен хитбокс с .46 до .55
+
+/* =========================================================
+   ДВЕРЬ ПОДВАЛА
+   ========================================================= */
+
+// Простая коробка двери
+box(
+  1.15, 2.0, .22,
+  MAT.timber,
+  -10.25, 1.0, 1.25
+);
+
+// Проём (чёрный)
+box(
+  .95, 1.70, .25,
+  MAT.black,
+  -10.25, .95, 1.25
+);
+
+// Дверное полотно
+box(
+  .90, 1.65, .08,
+  MAT.darkWood,
+  -10.25, .95, 1.17
+);
+
+// Панели на двери
+box(
+  .75, .50, .04,
+  MAT.timber,
+  -10.25, 1.35, 1.14
+);
+
+box(
+  .75, .60, .04,
+  MAT.timber,
+  -10.25, .50, 1.14
+);
+
+// Петли (слева)
+for(const y of [1.5, .95, .4]){
+  box(
+    .06, .12, .05,
+    MAT.darkMetal,
+    -10.70, y, 1.17
+  );
+}
+
+// Ручка (справа)
+cylinder(
+  .025, .025, .12,
+  MAT.metal,
+  -9.82, .95, 1.17,
+  8
+).rotation.y = Math.PI / 2;
+
+const cellarLabel=signSprite(
+  "ПОДВАЛ • E",
+  1.85,.35
+);
+
+cellarLabel.position.set(
+  -10.2,2.15,1.25
+);
+
+scene.add(cellarLabel);
+
+/* =========================================================
+   ПОДВАЛ
+   ========================================================= */
+
+function makeBasement(){
+
+  ground(
+    13,14,
+    material(0x625c54),
+    -32.5,.0,2
+  );
+
+  // Лестница от двора в подвал
+  const stairCount = 12;
+  const stairW = 2.0;
+  const stairH = 0.2;
+  const stairD = 0.4;
+  
+  for(let i = 0; i < stairCount; i++){
+    const stairX = -26 + i * 0.5;
+    const stairY = 0.4 - i * 0.22;
+    const stairZ = 1.25;
+    
+    propBox(
+      stairW, stairH, stairD,
+      MAT.stone,
+      stairX, stairY, stairZ
+    );
+  }
+
+  propBox(
+    .28,3.25,14,
+    MAT.stone,
+    -39,1.63,2
+  );
+
+  propBox(
+    .28,3.25,14,
+    MAT.stone,
+    -26,1.63,2
+  );
+
+  propBox(
+    13,3.25,.28,
+    MAT.stone,
+    -32.5,1.63,-5
+  );
+
+  propBox(
+    13,3.25,.28,
+    MAT.stone,
+    -32.5,1.63,9
+  );
+
+  /* кирпичные колонны */
+
+  for(const x of [-37.5,-27.5]){
+    for(let y=.25;y<3;y+=.42){
+      box(
+        .65,.3,.65,
+        material(0x795b4c),
+        x,y,0
+      );
+    }
+    addObstacle(x,0,.33,.33);
+  }
+
+  /* полки с ножками */
+
+  for(const x of [-36.2,-34.5,-29.0]){
+    
+    // Задняя стенка стеллажа (от пола до верха)
+    propBox(
+      1.2,1.9,.08,
+      MAT.darkWood,
+      x,.96,5.72
+    );
+
+    // Полки (теперь правильно позиционированы)
+    for(const y of [0.45,1.0,1.55]){
+      box(
+        1.16,.04,.54,
+        MAT.timber2,
+        x,y,5.5
+      );
+    }
+    
+    // Боковые стойки
+    for(const dx of [-0.55, 0.55]){
+      propBox(
+        0.08, 1.9, 0.5,
+        MAT.darkWood,
+        x + dx, 0.96, 5.5
+      );
+    }
+  }
+
+  /* бутылки на полках стеллажа */
+
+  // Расставляем бутылки на трёх полках стеллажа (высоты: 0.45, 1.0, 1.55)
+  const bottlePositions = [
+    // Нижняя полка (y=0.45)
+    {x:-36.2, y:0.73, z:5.38, color:0},
+    {x:-35.8, y:0.73, z:5.38, color:1},
+    {x:-35.4, y:0.73, z:5.38, color:2},
+    // Средняя полка (y=1.0)
+    {x:-34.9, y:1.28, z:5.38, color:0},
+    {x:-34.5, y:1.28, z:5.38, color:1},
+    {x:-34.1, y:1.28, z:5.38, color:2},
+    // Верхняя полка (y=1.55)
+    {x:-29.4, y:1.83, z:5.38, color:0},
+    {x:-29.0, y:1.83, z:5.38, color:1},
+    {x:-28.6, y:1.83, z:5.38, color:2},
+    {x:-28.2, y:1.83, z:5.38, color:0}
+  ];
+
+  for(let i=0; i<bottlePositions.length; i++){
+    const pos = bottlePositions[i];
+    
+    cylinder(
+      .065,.065,.28,
+      pos.color===0?MAT.green:
+      pos.color===1?MAT.red:
+      MAT.metal,
+      pos.x,
+      pos.y,
+      pos.z,
+      7
+    );
+  }
+
+  /* ящики */
+
+  for(const [x,z] of [
+    [-37,-2],
+    [-35.9,-2.1],
+    [-28.0,6.9]
+  ]){
+
+    propBox(
+      .9,.7,.8,
+      MAT.timber2,
+      x,.36,z
+    );
+  }
+
+  /* потолочные лампы с PointLight освещением */
+
+  for(const x of [-35,-30]){
+    // Лампа
+    const lamp = box(
+      .7,.12,.32,
+      material(0xffd39a,.3),
+      x,3.15,1.6
+    );
+    
+    // Добавляем источник света к каждой лампе
+    const light = new THREE.PointLight(0xffcc88, 1.5, 10);
+    light.position.set(x, 3.15, 1.6);
+    light.castShadow = true;
+    scene.add(light);
+  }
+  
+  /* Настенные светильники */
+  
+  for(const [x, z, dir] of [
+    [-38.5, 2, 0],
+    [-27, 2, Math.PI],
+    [-32.5, 8.5, Math.PI/2],
+    [-32.5, -4.5, -Math.PI/2]
+  ]){
+    // Крепление
+    const bracket = box(
+      0.15, 0.25, 0.1,
+      MAT.darkMetal,
+      x, 2.2, z
+    );
+    
+    // Плафон
+    const shade = box(
+      0.25, 0.2, 0.2,
+      material(0xffe5b4, 0.3),
+      x, 2.1, z
+    );
+    
+    // Источник света
+    const wallLight = new THREE.PointLight(0xffbb77, 1.2, 8);
+    wallLight.position.set(x, 2.1, z);
+    wallLight.castShadow = true;
+    scene.add(wallLight);
+  }
+
+  /* Рабочий стол с инструментами */
+  
+  propBox(
+    2.2, 0.08, 1.0,
+    MAT.darkWood,
+    -37.2, 0.78, -2.5
+  );
+  
+  // Ножки стола
+  for(const [dx, dz] of [[-.9, -.4], [.9, -.4], [-.9, .4], [.9, .4]]){
+    propBox(
+      0.12, 0.75, 0.12,
+      MAT.timber,
+      -37.2 + dx, 0.38, -2.5 + dz
+    );
+  }
+  
+  // Инструменты на столе
+  for(let i = 0; i < 4; i++){
+    cylinder(
+      0.03, 0.03, 0.25,
+      i % 2 === 0 ? MAT.metal : material(0x8b4513),
+      -38.0 + i * 0.35, 0.95, -2.6,
+      6
+    );
+  }
+
+  /* Старый диван */
+  
+  propBox(
+    1.8, 0.5, 0.9,
+    material(0x5a4a3a),
+    -29.5, 0.35, -3.5
+  );
+  
+  // Спинка дивана
+  propBox(
+    1.8, 0.7, 0.2,
+    material(0x5a4a3a),
+    -29.5, 0.75, -3.95
+  );
+  
+  // Подлокотники
+  for(const dx of [-0.8, 0.8]){
+    propBox(
+      0.2, 0.5, 0.9,
+      material(0x4a3a2a),
+      -29.5 + dx, 0.55, -3.5
+    );
+  }
+
+  /* Винный стеллаж */
+  
+  propBox(
+    0.5, 2.0, 1.5,
+    MAT.darkWood,
+    -38.2, 1.0, 7.5
+  );
+  
+  // Полки стеллажа
+  for(const y of [0.6, 1.2, 1.8]){
+    box(
+      0.5, 0.05, 1.5,
+      MAT.timber2,
+      -38.2, y, 7.5
+    );
+  }
+  
+  // Бутылки на стеллаже
+  for(let row = 0; row < 3; row++){
+    for(let i = 0; i < 5; i++){
+      const colorMat = i % 3 === 0 ? MAT.green : i % 3 === 1 ? material(0x4a0e0e) : MAT.red;
+      cylinder(
+        0.05, 0.05, 0.22,
+        colorMat,
+        -38.2, 0.72 + row * 0.6, 6.85 + i * 0.28,
+        7
+      );
+    }
+  }
+
+  /* Бочки */
+  
+  for(const [x, z] of [[-32.5, -3.5], [-31.2, -3.7]]){
+    cylinder(
+      0.4, 0.45, 0.9,
+      MAT.timber,
+      x, 0.45, z,
+      12
+    );
+    // Обручи на бочках
+    for(const dy of [0.2, 0.7]){
+      cylinder(
+        0.42, 0.42, 0.05,
+        MAT.darkMetal,
+        x, dy, z,
+        12
+      );
+    }
+    addObstacle(x, z, 0.45, 0.45);
+  }
+
+  /* Старый сундук */
+  
+  propBox(
+    1.2, 0.6, 0.7,
+    MAT.timber,
+    -33.5, 0.3, 7.2
+  );
+  
+  // Замок сундука
+  box(
+    0.15, 0.12, 0.08,
+    MAT.metal,
+    -33.5, 0.45, 7.55
+  );
+
+  /* Дополнительное освещение */
+  
+  // Настенная лампа
+  box(
+    0.2, 0.3, 0.2,
+    material(0xffe4b5, 0.2),
+    -38.5, 1.8, -4.5
+  );
+  
+  const lampLight = new THREE.PointLight(0xffbb66, 1.2, 8);
+  lampLight.position.set(-38.5, 1.8, -4.5);
+  lampLight.castShadow = true;
+  scene.add(lampLight);
+
+  // Ещё одна лампа на потолке
+  box(
+    0.7, 0.12, 0.32,
+    material(0xffd39a, 0.3),
+    -32.5, 2.85, -2
+  );
+
+  /* Паутина (декор) */
+  
+  for(const [x, z] of [[-38.8, 8.5], [-27, 8.5], [-27, -4.5]]){
+    const web = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.4, 0.4),
+      new THREE.MeshStandardMaterial({
+        color: 0xcccccc,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.DoubleSide
+      })
+    );
+    web.position.set(x, 2.8, z);
+    web.rotation.x = -Math.PI / 4;
+    scene.add(web);
+  }
+
+  /* Трубы */
+  
+  for(let i = 0; i < 3; i++){
+    const pipe = cylinder(
+      0.08, 0.08, 2.8,
+      MAT.metal,
+      -28.5 + i * 0.6, 1.4, 8.7,
+      8
+    );
+    pipe.castShadow = true;
+  }
+}
+
+makeBasement();
+
+// Нормальный потолок подвала с текстурой
+const basementCeiling=box(
+  13.5,.20,14.5,
+  material(0x6a6157), // Серо-коричневый цвет вместо чёрного
+  -32.5,3.30,2
+);
+basementCeiling.receiveShadow = true;
+
+/* Дверь выхода из подвала */
+
+// Дверная коробка
+propBox(
+  1.3, 2.3, 0.15,
+  MAT.darkWood,
+  -30.0, 1.15, -4.8
+);
+
+// Сама дверь
+const basementDoor = box(
+  1.15, 2.1, 0.08,
+  MAT.timber,
+  -30.0, 1.05, -4.72
+);
+
+// Ручка двери
+box(
+  0.08, 0.08, 0.12,
+  MAT.metal,
+  -29.5, 1.1, -4.68
+);
+
+const exitLabel=signSprite(
+  "ВО ДВОР • E",
+  1.8,.34
+);
+
+exitLabel.position.set(
+  -30.0,1.9,-4.3
+);
+
+scene.add(exitLabel);
+
+/* =========================================================
+   БАССЕЙН
+   ========================================================= */
+
+box(
+  8.4,.22,6.7,
+  MAT.stone,
+  -16,.07,-13
+);
+
+ground(
+  7.3,5.65,
+  MAT.water,
+  -16,.19,-13
+);
+
+addObstacle(
+  -16,-13,
+  3.45,2.55
+);
+
+/* края */
+
+for(const x of [-20.1,-11.9]){
+
+  box(
+    .28,.14,6.8,
+    MAT.white,
+    x,.19,-13
+  );
+}
+
+for(const z of [-16.3,-9.7]){
+
+  box(
+    8.4,.14,.28,
+    MAT.white,
+    -16,.19,z
+  );
+}
+
+/* лежак */
+
+propBox(
+  2.1,.22,.75,
+  MAT.white,
+  -19.4,.45,-9.0
+);
+
+box(
+  .72,1.0,.13,
+  MAT.white,
+  -20.1,.85,-9.0
+).rotation.z=.4;
+
+/* столик рядом с лежаком */
+
+propBox(
+  .62,.08,.62,
+  MAT.timber2,
+  -19.7,.67,-9.55
+);
+
+cylinder(
+  .08,.14,.62,
+  MAT.darkMetal,
+  -19.7,.34,-9.55
+);
+
+/* зонтик */
+
+cylinder(
+  .055,.055,2.3,
+  MAT.metal,
+  -11.1,1.15,-16.3
+);
+
+const parasol=new THREE.Mesh(
+  new THREE.ConeGeometry(
+    1.2,.55,12,
+    1,true
+  ),
+  MAT.orange
+);
+
+parasol.position.set(
+  -11.1,2.35,-16.3
+);
+
+parasol.rotation.x=Math.PI;
+scene.add(parasol);
+
+/* лестница */
+
+for(const x of [-19.4,-18.85]){
+
+  cylinder(
+    .045,.045,.9,
+    MAT.metal,
+    x,.52,-9.75
+  );
+}
+
+for(let y=.25;y<.85;y+=.2){
+
+  const rung=box(
+    .56,.04,.04,
+    MAT.metal,
+    -19.125,y,-9.75
+  );
+}
+
+/* =========================================================
+   ГРИЛЬ-ЗОНА
+   ========================================================= */
+
+for(const x of [-7.6,-3.2]){
+
+  box(
+    .2,2.35,.2,
+    MAT.darkWood,
+    x,1.17,-9.3
+  );
+}
+
+box(
+  4.75,.2,3.1,
+  MAT.roof,
+  -5.4,2.42,-9.3
+);
+
+/* гриль */
+
+propBox(
+  1.8,.85,.95,
+  MAT.darkMetal,
+  -5.8,.425,-11.7  // Опущен с .65 до .425 (половина высоты .85/2)
+);
+
+box(
+  1.6,.12,.8,
+  MAT.black,
+  -5.8,.895,-11.7  // Соответственно опущена крышка
+);
+
+for(let i=0;i<7;i++){
+
+  box(
+    .04,.04,.68,
+    MAT.metal,
+    -6.4+i*.2,
+    .975,  // Опущены решётки
+    -11.7
+  );
+}
+
+/* стол */
+
+propBox(
+  2.0,.16,.9,
+  MAT.timber2,
+  -2.2,.7,-15.1
+);
+
+for(const x of [-2.9,-1.5]){
+  box(
+    .13,.68,.13,
+    MAT.darkWood,
+    x,.35,-15.1
+  );
+}
+
+/* тарелки */
+
+for(let i=0;i<3;i++){
+
+  cylinder(
+    .2,.2,.035,
+    MAT.white,
+    -2.75+i*.52,
+    .81,-15.05,
+    16
+  );
+}
+
+/* ящик с дровами */
+
+propBox(
+  1.4,.65,.85,
+  MAT.timber,
+  1.8,.35,-9.2
+);
+
+for(let i=0;i<6;i++){
+
+  const log=cylinder(
+    .08,.1,.65,
+    MAT.darkWood,
+    1.4+(i%3)*.35,
+    .72,
+    -9.2+Math.floor(i/3)*.23,
+    8
+  );
+
+  log.rotation.z=Math.PI/2;
+}
+
+/* =========================================================
+   ТЕПЛИЦА
+   ========================================================= */
+
+function makeGreenhouse(){
+
+  const cx=9.5;
+  const cz=-13;
+
+  /* каркас */
+
+  for(const x of [4.8,14.2]){
+
+    for(const z of [-18.1,-7.9]){
+
+      box(
+        .12,2.65,.12,
+        MAT.metal,
+        x,1.32,z
+      );
+    }
+  }
+
+  for(let x=5;x<=14;x+=1.5){
+
+    box(
+      .07,2.4,.07,
+      MAT.metal,
+      x,1.2,-18
+    );
+
+    box(
+      .07,2.4,.07,
+      MAT.metal,
+      x,1.2,-8
+    );
+  }
+
+  for(let z=-17.5;z<=-8.5;z+=1.5){
+
+    box(
+      .07,2.35,.07,
+      MAT.metal,
+      4.9,1.2,z
+    );
+
+    box(
+      .07,2.35,.07,
+      MAT.metal,
+      14.1,1.2,z
+    );
+  }
+
+  /* стеклянные стенки */
+
+  box(
+    9,.07,9.6,
+    MAT.glass,
+    cx,2.65,cz
+  );
+
+  box(
+    9.2,2.3,.06,
+    MAT.glass,
+    cx,1.2,-18
+  );
+
+  box(
+    9.2,2.3,.06,
+    MAT.glass,
+    cx,1.2,-8
+  );
+
+  /* посадочные столы */
+
+  for(const x of [6.2,9.3,12.35]){
+
+    propBox(
+      1.5,.18,6.0,
+      MAT.timber2,
+      x,.72,-13
+    );
+
+    for(const z of [-15.2,-13,-10.8]){
+
+      cylinder(
+        .18,.21,.32,
+        MAT.darkWood,
+        x,.96,z,
+        8
+      );
+
+      sphere(
+        .28,
+        MAT.green,
+        x,1.27,z
+      );
+
+      if((Math.round(x+z)&1)===0){
+        sphere(
+          .09,
+          MAT.orange,
+          x+.15,1.42,z
+        );
+      }
+    }
+  }
+
+  /* полка для фото */
+
+  box(
+    1.7,.12,.45,
+    MAT.timber2,
+    11.4,.9,-9
+  );
+
+  for(const x of [10.75,12.05]){
+    box(
+      .1,.85,.1,
+      MAT.darkWood,
+      x,.45,-9
+    );
+  }
+
+  /* мешки земли */
+
+  for(const [x,z] of [
+    [5.6,-9.0],
+    [6.1,-9.25],
+    [5.85,-9.7]
+  ]){
+
+    box(
+      .5,.7,.3,
+      MAT.soil,
+      x,.36,z
+    );
+  }
+}
+
+makeGreenhouse();
+
+/* =========================================================
+   ДЕКОР ВОКРУГ УЧАСТКА
+   ========================================================= */
+
+/* ящики с яблоками */
+
+for(const [x,z] of [
+  [13.4,4.9],
+  [25.0,13.6],
+  [-20.9,4.2]
+]){
+
+  propBox(
+    .85,.45,.75,
+    MAT.timber2,
+    x,.25,z
+  );
+
+  for(let i=0;i<5;i++){
+
+    sphere(
+      .095,
+      i%2?MAT.red:MAT.orange,
+      x-.25+(i%3)*.23,
+      .52,
+      z-.16+Math.floor(i/3)*.25
+    );
+  }
+}
+
+/* пни */
+
+for(const [x,z] of [
+  [5.0,-5.0],
+  [27.4,5.0],
+  [-7.0,14.0],
+  [-21.7,-8.1],
+  [2.5,-8.0]
+]){
+
+  cylinder(
+    .32,.4,.55,
+    MAT.timber,
+    x,.27,z,
+    8
+  );
+
+  addObstacle(
+    x,z,.35,.35
+  );
+}
+
+/* =========================================================
+   КАЛИТКИ И ЗАБОР
+   ========================================================= */
+
+function gateMatchesEdge(
+  g,axis,at
+){
+  return (
+    g.axis===axis &&
+    Math.abs(g.at-at)<.001
+  );
+}
+
+/*
+  При строительстве забора мы вырезаем физический проём,
+  а не просто рисуем калитку поверх сплошного забора.
+*/
+function fenceSegment(
+  axis,
+  fixed,
+  start,
+  end
+){
+
+  const len=end-start;
+
+  if(len<.18)
+    return;
+
+  const middle=(start+end)/2;
+
+  if(axis==="x"){
+
+    box(
+      .11,.11,len,
+      MAT.timber2,
+      fixed,.58,middle
+    );
+
+    box(
+      .11,.11,len,
+      MAT.timber2,
+      fixed,1.18,middle
+    );
+
+    for(
+      let p=start;
+      p<=end+.05;
+      p+=1.45
+    ){
+
+      const q=Math.min(p,end);
+
+      box(
+        .19,1.55,.19,
+        MAT.darkWood,
+        fixed,.8,q
+      );
+
+      mesh(
+        new THREE.ConeGeometry(
+          .145,.22,4
+        ),
+        MAT.roof2,
+        fixed,1.68,q
+      );
+    }
+
+  }else{
+
+    box(
+      len,.11,.11,
+      MAT.timber2,
+      middle,.58,fixed
+    );
+
+    box(
+      len,.11,.11,
+      MAT.timber2,
+      middle,1.18,fixed
+    );
+
+    for(
+      let p=start;
+      p<=end+.05;
+      p+=1.45
+    ){
+
+      const q=Math.min(p,end);
+
+      box(
+        .19,1.55,.19,
+        MAT.darkWood,
+        q,.8,fixed
+      );
+
+      mesh(
+        new THREE.ConeGeometry(
+          .145,.22,4
+        ),
+        MAT.roof2,
+        q,1.68,fixed
+      );
+    }
+  }
+}
+
+const builtEdges=new Set();
+
+function buildFenceEdge(
+  axis,
+  at,
+  start,
+  end
+){
+
+  const rounded=v=>Math.round(v*100)/100;
+
+  const key=
+    `${axis}/${rounded(at)}/${rounded(start)}/${rounded(end)}`;
+
+  if(builtEdges.has(key))
+    return;
+
+  builtEdges.add(key);
+
+  let pieces=[
+    [start,end]
+  ];
+
+  for(const g of GATES){
+
+    if(!gateMatchesEdge(g,axis,at))
+      continue;
+
+    const gl=
+      g.mid-g.width/2;
+
+    const gr=
+      g.mid+g.width/2;
+
+    const next=[];
+
+    for(const [a,b] of pieces){
+
+      if(
+        gr<=a ||
+        gl>=b
+      ){
+
+        next.push([a,b]);
+
+      }else{
+
+        if(gl>a)
+          next.push([
+            a,
+            Math.max(a,gl)
+          ]);
+
+        if(gr<b)
+          next.push([
+            Math.min(b,gr),
+            b
+          ]);
+      }
+    }
+
+    pieces=next;
+  }
+
+  for(const p of pieces){
+    fenceSegment(
+      axis,
+      at,
+      p[0],
+      p[1]
+    );
+  }
+}
+
+/*
+  Подвал — закрытая внутренняя локация.
+  Его внешний прямоугольник не включаем в садовый забор.
+*/
+for(let i=0;i<ZONES.length;i++){
+
+  if(i===5)
+    continue;
+
+  const z=ZONES[i];
+
+  buildFenceEdge(
+    "x",
+    z.x1,
+    z.z1,
+    z.z2
+  );
+
+  buildFenceEdge(
+    "x",
+    z.x2,
+    z.z1,
+    z.z2
+  );
+
+  buildFenceEdge(
+    "z",
+    z.z1,
+    z.x1,
+    z.x2
+  );
+
+  buildFenceEdge(
+    "z",
+    z.z2,
+    z.x1,
+    z.x2
+  );
+}
+
+/* =========================================================
+   КРАСИВЫЕ КАЛИТКИ
+   ========================================================= */
+
+const gateWood=material(0x80593c);
+
+for(const g of GATES){
+
+  g.panels=[];
+
+  function point(
+    along,
+    y=0
+  ){
+
+    if(g.axis==="x"){
+      return [
+        g.at,
+        y,
+        along
+      ];
+    }
+
+    return [
+      along,
+      y,
+      g.at
+    ];
+  }
+
+  /* каменные стойки */
+
+  for(const side of [-1,1]){
+
+    const along=
+      g.mid+
+      side*g.width/2;
+
+    let p=point(
+      along,
+      1.0
+    );
+
+    box(
+      .38,2.1,.38,
+      MAT.stone,
+      ...p
+    );
+
+    p=point(
+      along,
+      2.11
+    );
+
+    box(
+      .5,.17,.5,
+      MAT.white,
+      ...p
+    );
+
+    /* фонарь */
+
+    p=point(
+      along,
+      2.46
+    );
+
+    box(
+      .27,.38,.27,
+      material(
+        0xffc978,
+        .3
+      ),
+      ...p
+    );
+
+    p=point(
+      along,
+      2.7
+    );
+
+    mesh(
+      new THREE.ConeGeometry(
+        .22,.25,4
+      ),
+      MAT.darkMetal,
+      ...p
+    );
+  }
+
+  /* верхняя перекладина */
+
+  if(g.axis==="x"){
+
+    box(
+      .2,.2,
+      g.width+.65,
+      MAT.darkWood,
+      g.at,2.28,g.mid
+    );
+
+  }else{
+
+    box(
+      g.width+.65,.2,.2,
+      MAT.darkWood,
+      g.mid,2.28,g.at
+    );
+  }
+
+  /* вывеска */
+
+  const sign=signSprite(
+    g.label,
+    Math.max(
+      1.7,
+      g.label.length*.16
+    ),
+    .36
+  );
+
+  sign.position.set(
+    ...point(
+      g.mid,
+      2.63
+    )
+  );
+
+  scene.add(sign);
+
+  /*
+    Две половины раздвижной калитки.
+  */
+
+  for(const side of [-1,1]){
+
+    const group=
+      new THREE.Group();
+
+    scene.add(group);
+
+    const closed=
+      g.mid+
+      side*g.width*.25;
+
+    group.position.set(
+      ...point(
+        closed,
+        .84
+      )
+    );
+
+    if(g.axis==="x"){
+
+      box(
+        .14,1.62,
+        g.width*.47,
+        gateWood,
+        0,0,0,
+        group
+      );
+
+      for(let i=-2;i<=2;i++){
+
+        box(
+          .17,1.47,.13,
+          MAT.timber2,
+          0,0,
+          i*g.width*.085,
+          group
+        );
+
+        mesh(
+          new THREE.ConeGeometry(
+            .13,.18,4
+          ),
+          MAT.roof2,
+          0,.82,
+          i*g.width*.085,
+          group
+        );
+      }
+
+      box(
+        .16,.1,
+        g.width*.46,
+        MAT.darkMetal,
+        0,.48,0,
+        group
+      );
+
+      box(
+        .16,.1,
+        g.width*.46,
+        MAT.darkMetal,
+        0,-.48,0,
+        group
+      );
+
+    }else{
+
+      box(
+        g.width*.47,1.62,.14,
+        gateWood,
+        0,0,0,
+        group
+      );
+
+      for(let i=-2;i<=2;i++){
+
+        box(
+          .13,1.47,.17,
+          MAT.timber2,
+          i*g.width*.085,
+          0,0,
+          group
+        );
+
+        mesh(
+          new THREE.ConeGeometry(
+            .13,.18,4
+          ),
+          MAT.roof2,
+          i*g.width*.085,
+          .82,0,
+          group
+        );
+      }
+
+      box(
+        g.width*.46,.1,.16,
+        MAT.darkMetal,
+        0,.48,0,
+        group
+      );
+
+      box(
+        g.width*.46,.1,.16,
+        MAT.darkMetal,
+        0,-.48,0,
+        group
+      );
+    }
+
+    g.panels.push({
+      group,
+      closed,
+      side
+    });
+  }
+}
+
+function gateIsOpen(g){
+  return completed(g.needs);
+}
+
+/* =========================================================
+   КОНТЕЙНЕРЫ
+   ========================================================= */
+
+const bins=[];
+
+for(let i=0;i<ZONES.length;i++){
+
+  const [x,z]=ZONES[i].bin;
+
+  const group=
+    new THREE.Group();
+
+  group.position.set(
+    x,0,z
+  );
+
+  scene.add(group);
+
+  const body=box(
+    .88,1.07,.77,
+    MAT.green,
+    0,.55,0,
+    group
+  );
+
+  body.material=
+    MAT.green.clone();
+
+  body.material.emissive=
+    new THREE.Color(0);
+
+  const rim=box(
+    .98,.1,.86,
+    MAT.darkMetal,
+    0,1.09,0,
+    group
+  );
+
+  rim.material=
+    MAT.darkMetal.clone();
+
+  rim.material.emissive=
+    new THREE.Color(0);
+
+  box(
+    .88,.09,.78,
+    MAT.darkWood,
+    0,1.17,0,
+    group
+  );
+
+  /* ручки */
+
+  for(const side of [-1,1]){
+
+    box(
+      .07,.68,.06,
+      MAT.timber2,
+      side*.29,.58,.4,
+      group
+    );
+  }
+
+  /* колёса */
+
+  for(const side of [-1,1]){
+
+    const wheel=cylinder(
+      .13,.13,.09,
+      MAT.black,
+      side*.34,.15,.42,
+      12,
+      group
+    );
+
+    wheel.rotation.z=Math.PI/2;
+  }
+
+  const label=signSprite(
+    "ЛИСТЬЯ",
+    .75,.2
+  );
+
+  label.position.set(
+    0,1.3,.42  // Повысил с 0.72 до 1.3 чтобы надпись была выше крышки
+  );
+
+  group.add(label);
+
+  addObstacle(
+    x,z,
+    .50,.45  // Увеличил с .45,.4 до .50,.45 для надёжности
+  );
+
+  bins.push({
+    group,
+    body,
+    rim,
+    x,z
+  });
+}
+
+/* =========================================================
+   ФОТОГРАФИИ
+   ========================================================= */
+
+const photos=[];
+
+for(let i=0;i<PHOTO_INFO.length;i++){
+
+  const p=PHOTO_INFO[i];
+
+  const group=
+    new THREE.Group();
+
+  group.position.set(
+    p.x,
+    p.y,
+    p.z
+  );
+
+  scene.add(group);
+
+  /*
+    Маленькая рамка.
+    Они находятся НА поверхностях,
+    а не в центре мебели.
+  */
+
+  const frame=box(
+    .31,.4,.035,
+    MAT.darkWood,
+    0,0,0,
+    group
+  );
+
+  frame.material=
+    MAT.darkWood.clone();
+
+  frame.material.emissive=
+    new THREE.Color(0);
+
+  box(
+    .26,.30,.04,
+    [
+      MAT.orange,
+      MAT.green,
+      MAT.blue,
+      MAT.red
+    ][i%4],
+    0,.025,.024,
+    group
+  );
+
+  box(
+    .27,.055,.043,
+    MAT.white,
+    0,-.155,.025,
+    group
+  );
+
+  photos.push({
+    ...p,
+    group,
+    frame
+  });
+}
+
+/* =========================================================
+   ЛИСТЬЯ
+   ========================================================= */
+
+let rndSeed=391177;
+
+function rand(){
+
+  rndSeed=
+    (rndSeed*1664525+
+     1013904223)>>>0;
+
+  return rndSeed/4294967296;
+}
+
+const leafGeometry = (function(){
+  // Создаём улучшенную геометрию листа с более реалистичной формой
+  const geom = new THREE.PlaneGeometry(0.25, 0.18); // Увеличили размер
+  geom.rotateX(-Math.PI/2);
+  geom.translate(0, 0, 0); // Высота будет устанавливаться индивидуально через yOffset
+  return geom;
+})();
+
+// Добавляем emissive свечение для материалов листьев
+LEAF_MATS.forEach(mat => {
+  mat.emissive = new THREE.Color(0xffbb00); // Яркое жёлто-оранжевое свечение
+  mat.emissiveIntensity = 0.35; // Увеличена интенсивность с 0.15 до 0.35
+});
+
+// Raycaster для определения листа под курсором (центр экрана)
+const leafRaycaster = new THREE.Raycaster();
+leafRaycaster.far = 3.0; // Максимальная дальность для листьев
+let hoveredLeaf = null;
+
+const leafInstances=
+  LEAF_MATS.map(mat=>{
+
+    mat.side=
+      THREE.DoubleSide;
+
+    const inst=
+      new THREE.InstancedMesh(
+        leafGeometry,
+        mat,
+        2800
+      );
+
+    inst.instanceMatrix.setUsage(
+      THREE.DynamicDrawUsage
+    );
+
+    inst.castShadow=false;
+    inst.receiveShadow=true;
+
+    scene.add(inst);
+
+    return inst;
+  });
+
+const leafBuckets=
+  LEAF_MATS.map(()=>[]);
+
+const leaves=[];
+
+const dummy=
+  new THREE.Object3D();
+
+function insideZone(
+  x,z,i,margin=0
+){
+
+  const q=ZONES[i];
+
+  return (
+    x>q.x1+margin &&
+    x<q.x2-margin &&
+    z>q.z1+margin &&
+    z<q.z2-margin
+  );
+}
+
+function zoneAt(
+  x,z
+){
+
+  for(let i=0;i<ZONES.length;i++){
+
+    if(
+      insideZone(
+        x,z,i,0
+      )
+    ){
+      return i;
+    }
+  }
+
+  // Если точка не внутри зоны, проверяем границы с небольшим допуском
+  // Это нужно для прохода через калитки на границах зон
+  for(let i=0;i<ZONES.length;i++){
+    const q=ZONES[i];
+    const tolerance=0.3; // 30см допуск для границ
+    
+    if(
+      x >= q.x1-tolerance &&
+      x <= q.x2+tolerance &&
+      z >= q.z1-tolerance &&
+      z <= q.z2+tolerance
+    ){
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+function leafPositionAllowed(
+  x,z,
+  zone,
+  radius=.13
+){
+
+  return (
+    insideZone(
+      x,z,
+      zone,
+      radius
+    ) &&
+    !blockedByObject(
+      x,z,
+      radius
+    )
+  );
+}
+
+function createLeaf(
+  zone,
+  active=true
+){
+
+  const q=ZONES[zone];
+
+  let x=0;
+  let z=0;
+  let good=false;
+
+  /*
+    Большой лимит поиска нужен,
+    чтобы количество листьев не уменьшалось
+    из-за плотного декора.
+  */
+
+  for(let tries=0;tries<8000;tries++){
+
+    x=
+      q.x1+.45+
+      rand()*
+      (q.x2-q.x1-.9);
+
+    z=
+      q.z1+.45+
+      rand()*
+      (q.z2-q.z1-.9);
+
+    if(
+      leafPositionAllowed(
+        x,z,zone,.16
+      )
+    ){
+
+      good=true;
+      break;
+    }
+  }
+
+  /*
+    Резервный систематический поиск,
+    если случайная генерация не нашла место.
+  */
+
+  if(!good){
+
+    outer:
+    for(
+      let sx=q.x1+.45;
+      sx<q.x2-.45;
+      sx+=.32
+    ){
+
+      for(
+        let sz=q.z1+.45;
+        sz<q.z2-.45;
+        sz+=.32
+      ){
+
+        if(
+          leafPositionAllowed(
+            sx,sz,zone,.14
+          )
+        ){
+
+          x=sx;
+          z=sz;
+
+          good=true;
+          break outer;
+        }
+      }
+    }
+  }
+
+  if(!good){
+
+    console.error(
+      "Нет места для листа:",
+      ZONES[zone].name
+    );
+
+    return;
+  }
+
+  const color=
+    Math.floor(
+      rand()*
+      leafInstances.length
+    );
+
+  const l={
+    x,z,
+    vx:0,
+    vz:0,
+    home:zone,
+    active,
+    angle:rand()*Math.PI*2,
+    scale:.72+rand()*.7,
+    color,
+    yOffset: zone === 0 ? 0.22 : (zone === 1 ? 0.08 : 0.01) // Крыльцо выше, сарай чуть выше, остальное на земле
+  };
+
+  l.instanceIndex=
+    leafBuckets[color].length;
+
+  leafBuckets[color].push(l);
+  leaves.push(l);
+}
+
+for(let z=0;z<ZONES.length;z++){
+
+  const already=
+    Math.min(
+      ZONES[z].leaves,
+      save.deposited[z]
+    );
+
+  for(let i=0;i<ZONES[z].leaves;i++){
+
+    createLeaf(
+      z,
+      i>=already
+    );
+  }
+}
+
+function updateLeafMatrices(){
+
+  for(let c=0;c<leafInstances.length;c++){
+
+    const mesh=
+      leafInstances[c];
+
+    const bucket=
+      leafBuckets[c];
+
+    mesh.count=
+      bucket.length;
+
+    for(let i=0;i<bucket.length;i++){
+
+      const l=
+        bucket[i];
+
+      dummy.position.set(
+        l.x,
+        l.active ? (l.yOffset || 0.01) : -25,  // Используем индивидуальную высоту или default 0.01
+        l.z
+      );
+
+      dummy.rotation.set(
+        0,l.angle,0
+      );
+
+      dummy.scale.setScalar(
+        l.scale
+      );
+
+      dummy.updateMatrix();
+
+      mesh.setMatrixAt(
+        i,
+        dummy.matrix
+      );
+    }
+
+    mesh.instanceMatrix.needsUpdate=
+      true;
+  }
+}
+
+updateLeafMatrices();
+
+/* =========================================================
+   ТРАВИНКИ
+   ========================================================= */
+
+const bladeGeometry=
+  new THREE.PlaneGeometry(
+    .055,.33
+  );
+
+bladeGeometry.translate(
+  0,.165,0
+);
+
+const bladeMaterial=
+  new THREE.MeshStandardMaterial({
+    color:0x93a66a,
+    roughness:1,
+    side:THREE.DoubleSide
+  });
+
+const grassBlades=
+  new THREE.InstancedMesh(
+    bladeGeometry,
+    bladeMaterial,
+    2600
+  );
+
+scene.add(grassBlades);
+
+let grassCount=0;
+
+for(let i=0;i<2600;i++){
+
+  const zi=
+    Math.floor(
+      rand()*ZONES.length
+    );
+
+  if(
+    zi===5 ||
+    zi===3
+  ) continue;
+
+  const q=
+    ZONES[zi];
+
+  const x=
+    q.x1+.35+
+    rand()*
+    (q.x2-q.x1-.7);
+
+  const z=
+    q.z1+.35+
+    rand()*
+    (q.z2-q.z1-.7);
+
+  if(
+    blockedByObject(
+      x,z,.25
+    )
+  ) continue;
+
+  dummy.position.set(
+    x,.02,z
+  );
+
+  dummy.rotation.set(
+    0,
+    rand()*Math.PI*2,
+    0
+  );
+
+  dummy.scale.setScalar(
+    .45+rand()*.9
+  );
+
+  dummy.updateMatrix();
+
+  grassBlades.setMatrixAt(
+    grassCount++,
+    dummy.matrix
+  );
+}
+
+grassBlades.count=
+  grassCount;
+
+grassBlades.instanceMatrix.needsUpdate=
+  true;
+
+/* =========================================================
+   ИГРОК
+   ========================================================= */
+
+const player={
+  x:10.8,
+  z:4.7,
+
+  yaw:0,
+  pitch:0,
+
+  velocityX:0,
+  velocityZ:0,
+
+  stamina:100,
+
+  tool:0,
+
+  /*
+    В мешке храним листья ПО ЗОНАМ.
+    Поэтому листья из одной территории
+    невозможно сдать в другой.
+  */
+  bagByZone:
+    Array(ZONES.length).fill(0),
+
+  bob:0,
+
+  actionCooldown:0
+};
+
+function bagTotal(){
+
+  return player.bagByZone.reduce(
+    (a,b)=>a+b,
+    0
+  );
+}
+
+function bagCapacity(){
+
+  return (
+    12+
+    save.upgrades.bag*7
+  );
+}
+
+/* =========================================================
+   ИНСТРУМЕНТ В КАМЕРЕ
+   ========================================================= */
+
+const viewModel=
+  new THREE.Group();
+
+camera.add(viewModel);
+scene.add(camera);
+
+/* руки */
+
+const handMat=
+  material(0xc89a73);
+
+const leftHand=box(
+  .18,.42,.2,
+  handMat,
+  -.38,-.5,-.72,
+  viewModel
+);
+
+leftHand.rotation.z=.15;
+
+const rightHand=box(
+  .18,.42,.2,
+  handMat,
+  .41,-.5,-.72,
+  viewModel
+);
+
+rightHand.rotation.z=-.15;
+
+/* грабли */
+
+const rakeGroup=
+  new THREE.Group();
+
+viewModel.add(rakeGroup);
+
+// Деревянная ручка (более толстая внизу, тоньше вверху)
+const handleBottom = box(
+  .085, .085, .65,
+  MAT.timber2,
+  .42, -.43, -.6,
+  rakeGroup
+);
+handleBottom.rotation.x = .28;
+
+const handleTop = box(
+  .07, .07, .6,
+  MAT.timber,
+  .42, -.43, -1.15,
+  rakeGroup
+);
+handleTop.rotation.x = .28;
+
+// Металлическое соединение (муфта)
+cylinder(
+  .045, .045, .12,
+  MAT.darkMetal,
+  .42, -.58, -1.32,
+  8
+).rotation.x = Math.PI / 2 - .28;
+
+// Головка граблей (более широкая планка)
+const rakeHead = box(
+  .92, .09, .14,
+  MAT.metal,
+  .42, -.72, -1.46,
+  rakeGroup
+);
+
+// Укрепляющая пластина
+box(
+  .88, .04, .08,
+  MAT.darkMetal,
+  .42, -.68, -1.42,
+  rakeGroup
+);
+
+// Зубья граблей (9 штук, более тонкие и длинные)
+for(let i=-4; i<=4; i++){
+  const tooth = box(
+    .032, .28, .048,
+    MAT.metal,
+    .42 + i * .098,
+    -.85,
+    -1.46,
+    rakeGroup
+  );
+  
+  // Небольшой изгиб зубьев
+  tooth.rotation.x = .08;
+}
+
+// Дополнительные укрепляющие болты на головке
+for(let i=-3; i<=3; i+=2){
+  cylinder(
+    .018, .018, .06,
+    MAT.darkMetal,
+    .42 + i * .15,
+    -.72,
+    -1.46,
+    6
+  );
+}
+
+/* воздуходувка */
+
+const blowerGroup=
+  new THREE.Group();
+
+viewModel.add(blowerGroup);
+
+box(
+  .31,.27,.7,
+  MAT.orange,
+  .42,-.42,-.84,
+  blowerGroup
+);
+
+const tube=cylinder(
+  .12,.18,.72,
+  MAT.darkMetal,
+  .42,-.43,-1.35,
+  12,
+  blowerGroup
+);
+
+tube.rotation.x=
+  Math.PI/2;
+
+/* автоматическое сопло */
+
+const collectorGroup=
+  new THREE.Group();
+
+viewModel.add(collectorGroup);
+
+box(
+  .27,.23,.64,
+  MAT.green,
+  .42,-.4,-.82,
+  collectorGroup
+);
+
+const collectorTube=cylinder(
+  .14,.2,.7,
+  MAT.darkMetal,
+  .42,-.42,-1.32,
+  12,
+  collectorGroup
+);
+
+collectorTube.rotation.x=
+  Math.PI/2;
+
+function refreshTool(){
+
+  const collectorActive=
+    player.tool===3 &&
+    save.upgrades.collector;
+
+  leftHand.visible=
+    player.tool===0;
+
+  rightHand.visible=
+    player.tool===0;
+
+  rakeGroup.visible=
+    player.tool===1 &&
+    save.upgrades.rake;
+
+  blowerGroup.visible=
+    player.tool===2 &&
+    save.upgrades.blower;
+
+  collectorGroup.visible=
+    collectorActive;
+}
+
+refreshTool();
+
+/* =========================================================
+   СОСТОЯНИЕ UI / INPUT
+   ========================================================= */
+
+let started=false;
+let paused=true;
+let panelOpen=null;
+let mouseDown=false;
+let mouseClicked=false; // Для отслеживания клика (не зажатия)
+let toastTimer=0;
+let hudTimer=0;
+let journalTab="quests";
+
+const keys=new Set();
+
+function pointerLocked(){
+  return (
+    document.pointerLockElement===
+    renderer.domElement
+  );
+}
+
+function distance2D(
+  x,z
+){
+
+  return Math.hypot(
+    player.x-x,
+    player.z-z
+  );
+}
+
+function lookDirection(){
+  // В Three.js с rotation.order="YXZ":
+  // yaw=0 смотрит вдоль оси -Z (в экран)
+  // yaw растёт против часовой стрелки (влево)
+  // Для движения вперёд нужен вектор направления камеры
+  
+  return {
+    x: -Math.sin(player.yaw),
+    z: -Math.cos(player.yaw)
+  };
+}
+
+function lookingAt(
+  x,z,
+  range=2,
+  cone=.55
+){
+
+  const dx=x-player.x;
+  const dz=z-player.z;
+
+  const d=Math.hypot(
+    dx,dz
+  );
+
+  if(d>range)
+    return false;
+
+  if(d<.6)
+    return true;
+
+  const f=
+    lookDirection();
+
+  return (
+    (dx*f.x+dz*f.z)/d >
+    cone
+  );
+}
+
+function showToast(text){
+
+  const node=
+    document.querySelector("#toast");
+
+  node.textContent=text;
+  node.style.opacity=1;
+
+  clearTimeout(
+    toastTimer
+  );
+
+  toastTimer=setTimeout(()=>{
+    node.style.opacity=0;
+  },2600);
+}
+
+/* =========================================================
+   ФИЗИКА КАЛИТОК / ПЕРЕМЕЩЕНИЕ
+   ========================================================= */
+
+function gateBetween(
+  from,to
+){
+
+  return GATES.find(
+    g=>
+      (g.a===from && g.b===to) ||
+      (g.a===to && g.b===from)
+  );
+}
+
+function insideGateGap(
+  g,
+  x,z,
+  r=.22
+){
+
+  const along=
+    g.axis==="x"?
+      z:
+      x;
+
+  // Используем только половину радиуса для более свободного прохода
+  return (
+    Math.abs(
+      along-g.mid
+    ) <
+    g.width/2 - r*0.5
+  );
+}
+
+/*
+  Для следующей зоны проверяем:
+  1. она геометрически соседняя
+  2. есть калитка
+  3. её условие выполнено
+  4. игрок реально идёт через проём
+*/
+function legalMove(
+  nx,nz,
+  radius=.2
+){
+
+  const current=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  const next=
+    zoneAt(
+      nx,nz
+    );
+
+  // Если зоны не определены - блокируем
+  if(current < 0 || next < 0){
+    return false;
+  }
+
+  // Переход между зонами - ТОЛЬКО проверка калитки, ничего больше
+  if(current !== next){
+    const gate = gateBetween(current, next);
+    return gate && gateIsOpen(gate);
+  }
+
+  // Движение внутри одной зоны - обычные проверки
+  if(blockedByObject(nx, nz, radius)){
+    return false;
+  }
+
+  const q = ZONES[current];
+  
+  return (
+    nx > q.x1 + radius &&
+    nx < q.x2 - radius &&
+    nz > q.z1 + radius &&
+    nz < q.z2 - radius
+  );
+}
+
+function movePlayer(
+  dx,dz
+){
+
+  const steps=
+    Math.max(
+      1,
+      Math.ceil(
+        Math.hypot(dx,dz)/.07
+      )
+    );
+
+  for(let i=0;i<steps;i++){
+
+    const sx=
+      dx/steps;
+
+    const sz=
+      dz/steps;
+
+    const newX = player.x + sx;
+    const newZ = player.z + sz;
+
+    // ПРОСТАЯ ПРОВЕРКА: если игрок в радиусе 2 метров от ОТКРЫТОЙ калитки - пропускаем
+    let nearOpenGate = false;
+    for(const g of GATES){
+      if(gateIsOpen(g)){
+        const distPerp = g.axis === "x" ? Math.abs(newX - g.at) : Math.abs(newZ - g.at);
+        const distAlong = g.axis === "x" ? Math.abs(newZ - g.mid) : Math.abs(newX - g.mid);
+        
+        if(distPerp < 1.5 && distAlong < g.width / 2 + 1.0){
+          nearOpenGate = true;
+          break;
+        }
+      }
+    }
+
+    if(nearOpenGate){
+      // Рядом с открытой калиткой - двигаемся свободно
+      player.x = newX;
+      player.z = newZ;
+    } else {
+      // Обычная проверка
+      if(legalMove(newX, newZ)){
+        player.x = newX;
+        player.z = newZ;
+      } else {
+        if(legalMove(player.x+sx, player.z)){
+          player.x+=sx;
+        }
+
+        if(legalMove(player.x, player.z+sz)){
+          player.z+=sz;
+        }
+      }
+    }
+  }
+}
+
+/* =========================================================
+   ЛИСТЬЯ: СБОР РУКАМИ
+   ========================================================= */
+
+function groundLeavesInZone(
+  zone
+){
+
+  let count=0;
+
+  for(const l of leaves){
+
+    if(
+      l.active &&
+      l.home===zone
+    ){
+      count++;
+    }
+  }
+
+  return count;
+}
+
+function nearestLeafInView(
+  zone,
+  range
+){
+
+  let best=null;
+  let bestDistance=range;
+
+  for(const l of leaves){
+
+    if(
+      !l.active ||
+      l.home!==zone
+    ) continue;
+
+    const d=
+      distance2D(
+        l.x,l.z
+      );
+
+    if(
+      d<bestDistance &&
+      lookingAt(
+        l.x,l.z,
+        range,
+        .58
+      )
+    ){
+
+      best=l;
+      bestDistance=d;
+    }
+  }
+
+  return best;
+}
+
+function updateHoveredLeaf(){
+  /*
+    Обновляем лист под прицелом (центр экрана).
+    Используем raycaster для точного определения.
+  */
+  
+  const zi = zoneAt(player.x, player.z);
+  
+  // Сбрасываем подсветку предыдущего листа
+  if(hoveredLeaf){
+    const mat = LEAF_MATS[hoveredLeaf.color];
+    mat.emissiveIntensity = 0.35;
+    hoveredLeaf = null;
+  }
+  
+  if(zi < 0) return;
+  
+  // Raycaster из центра экрана (где прицел)
+  leafRaycaster.setFromCamera(
+    new THREE.Vector2(0, 0), // Центр экрана
+    camera
+  );
+  
+  // Проверяем пересечения со всеми инстансами листьев
+  const intersects = leafRaycaster.intersectObjects(leafInstances, false);
+  
+  if(intersects.length > 0){
+    // Нашли пересечение с листом
+    const hit = intersects[0];
+    const instanceId = hit.instanceId;
+    
+    // Найдём соответствующий объект листа
+    for(const l of leaves){
+      if(
+        l.active &&
+        l.home === zi &&
+        l.instanceIndex === instanceId &&
+        hit.object === leafInstances[l.color]
+      ){
+        // Нашли активный лист под курсором
+        hoveredLeaf = l;
+        
+        // Подсвечиваем лист
+        const mat = LEAF_MATS[l.color];
+        mat.emissiveIntensity = 0.8; // Яркая подсветка
+        
+        break;
+      }
+    }
+  }
+}
+
+function collectByHand(){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  if(
+    bagTotal()>=
+    bagCapacity()
+  ){
+
+    showToast(
+      "Мешок заполнен"
+    );
+
+    return;
+  }
+
+  // Собираем лист под прицелом
+  if(!hoveredLeaf)
+    return;
+
+  /*
+    Собираем только один лист за клик.
+    Множественный сбор работает через апгрейд "Автоматическое сопло".
+  */
+
+  hoveredLeaf.active=false;
+  player.bagByZone[zi]++;
+  save.pickedByZone[zi]++;
+
+  store();
+  
+  // Сбрасываем подсветку
+  const mat = LEAF_MATS[hoveredLeaf.color];
+  mat.emissiveIntensity = 0.35;
+  hoveredLeaf = null;
+}
+
+/* =========================================================
+   ГРАБЛИ
+   ========================================================= */
+
+function rakeLeaves(
+  dt
+){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  const f=
+    lookDirection();
+
+  const width=
+    .65+
+    save.upgrades.rakeWidth*.18;
+
+  const reach=
+    1.55+
+    save.upgrades.rakeWidth*.18;
+
+  /*
+    Грабли НЕ магнитят лист.
+    Они дают импульс только листьям,
+    находящимся в полосе перед головкой.
+    Импульс направлен назад, к ногам игрока.
+  */
+
+  for(const l of leaves){
+
+    if(
+      !l.active ||
+      l.home!==zi
+    ) continue;
+
+    const dx=
+      l.x-player.x;
+
+    const dz=
+      l.z-player.z;
+
+    const forward=
+      dx*f.x+
+      dz*f.z;
+
+    const side=
+      Math.abs(
+        dx*f.z-
+        dz*f.x
+      );
+
+    if(
+      forward>.56 &&
+      forward<reach &&
+      side<width
+    ){
+
+      const force=
+        3.45;
+
+      l.vx-=
+        f.x*
+        force*
+        dt;
+
+      l.vz-=
+        f.z*
+        force*
+        dt;
+
+      /*
+        небольшая локальная составляющая —
+        лист остаётся в естественной кучке,
+        а не в идеальной точке
+      */
+
+      l.vx+=
+        (rand()-.5)*
+        .25*
+        dt;
+
+      l.vz+=
+        (rand()-.5)*
+        .25*
+        dt;
+    }
+  }
+}
+
+/* =========================================================
+   ВОЗДУХОДУВКА
+   ========================================================= */
+
+function blowLeaves(
+  dt
+){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  const f=
+    lookDirection();
+
+  for(const l of leaves){
+
+    if(
+      !l.active ||
+      l.home!==zi
+    ) continue;
+
+    const dx=
+      l.x-player.x;
+
+    const dz=
+      l.z-player.z;
+
+    const forward=
+      dx*f.x+
+      dz*f.z;
+
+    const side=
+      Math.abs(
+        dx*f.z-
+        dz*f.x
+      );
+
+    if(
+      forward>.4 &&
+      forward<4.2 &&
+      side<
+        .45+
+        forward*.22
+    ){
+
+      const force=
+        5.2*
+        (1-forward/5);
+
+      l.vx+=
+        f.x*
+        force*
+        dt;
+
+      l.vz+=
+        f.z*
+        force*
+        dt;
+
+      l.vx+=
+        (rand()-.5)*
+        .28*
+        dt;
+
+      l.vz+=
+        (rand()-.5)*
+        .28*
+        dt;
+    }
+  }
+}
+
+/* =========================================================
+   АВТОМАТИЧЕСКИЙ ЛИСТОЗАБОРНИК
+   ========================================================= */
+
+function collectorLeaves(){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  if(
+    bagTotal()>=
+    bagCapacity()
+  ) return;
+
+  const f=
+    lookDirection();
+
+  let target=null;
+  let best=2.4;
+
+  for(const l of leaves){
+
+    if(
+      !l.active ||
+      l.home!==zi
+    ) continue;
+
+    const dx=
+      l.x-player.x;
+
+    const dz=
+      l.z-player.z;
+
+    const d=
+      Math.hypot(
+        dx,dz
+      );
+
+    if(d>best)
+      continue;
+
+    const dot=
+      (
+        dx*f.x+
+        dz*f.z
+      )/Math.max(d,.001);
+
+    if(dot>.76){
+
+      target=l;
+      best=d;
+    }
+  }
+
+  if(target){
+
+    target.active=false;
+
+    player.bagByZone[zi]++;
+
+    save.pickedByZone[zi]++;
+
+    store();
+  }
+}
+
+/* =========================================================
+   ФИЗИКА ЛИСТЬЕВ
+   ========================================================= */
+
+function simulateLeaves(
+  dt
+){
+
+  for(const l of leaves){
+
+    if(!l.active)
+      continue;
+
+    if(
+      Math.abs(l.vx)+
+      Math.abs(l.vz)
+      <.008
+    ){
+
+      l.vx=0;
+      l.vz=0;
+
+      continue;
+    }
+
+    /*
+      несколько подшагов уменьшают
+      вероятность перескока через мебель
+    */
+
+    const substeps=
+      Math.max(
+        1,
+        Math.ceil(
+          Math.hypot(
+            l.vx*dt,
+            l.vz*dt
+          )/.045
+        )
+      );
+
+    for(let i=0;i<substeps;i++){
+
+      const sx=
+        l.vx*dt/substeps;
+
+      const sz=
+        l.vz*dt/substeps;
+
+      if(
+        leafPositionAllowed(
+          l.x+sx,
+          l.z,
+          l.home,
+          .11
+        )
+      ){
+
+        l.x+=sx;
+
+      }else{
+
+        l.vx*=-.18;
+      }
+
+      if(
+        leafPositionAllowed(
+          l.x,
+          l.z+sz,
+          l.home,
+          .11
+        )
+      ){
+
+        l.z+=sz;
+
+      }else{
+
+        l.vz*=-.18;
+      }
+    }
+
+    const damping=
+      Math.exp(
+        -5.0*dt
+      );
+
+    l.vx*=damping;
+    l.vz*=damping;
+
+    l.angle+=
+      (l.vx+l.vz)*
+      dt*.45;
+  }
+}
+
+/* =========================================================
+   СДАЧА ЛИСТЬЕВ
+   ========================================================= */
+
+function depositLeaves(){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return false;
+
+  const bin=
+    bins[zi];
+
+  if(
+    distance2D(
+      bin.x,bin.z
+    )>2.25
+  ){
+    return false;
+  }
+
+  const amountInBag=
+    player.bagByZone[zi];
+
+  if(
+    amountInBag<=0
+  ){
+
+    showToast(
+      "В мешке нет листьев этой зоны"
+    );
+
+    return true;
+  }
+
+  const remaining=
+    Math.max(
+      0,
+      ZONES[zi].leaves-
+      save.deposited[zi]
+    );
+
+  const amount=
+    Math.min(
+      amountInBag,
+      remaining
+    );
+
+  if(amount<=0){
+
+    showToast(
+      "Эта территория уже полностью убрана"
+    );
+
+    return true;
+  }
+
+  const wasComplete=
+    completed(zi);
+
+  save.deposited[zi]+=
+    amount;
+
+  player.bagByZone[zi]-=
+    amount;
+
+  save.coins+=
+    amount*2;
+
+  save.totalDeposited+=
+    amount;
+
+  if(
+    completed(zi) &&
+    !wasComplete
+  ){
+
+    const bonus=
+      55+
+      zi*15;
+
+    save.coins+=bonus;
+
+    if(zi===5){
+
+      showToast(
+        `Подвал полностью убран! +${bonus} монет. Вернись во двор — калитка к бассейну открыта.`
+      );
+
+    }else{
+
+      showToast(
+        `«${ZONES[zi].name}» полностью убрана! +${bonus} монет. Следующая калитка открыта.`
+      );
+    }
+
+  }else{
+
+    showToast(
+      `Сдано ${amount} листьев · +${amount*2} монет`
+    );
+  }
+
+  store();
+  renderHUD();
+
+  return true;
+}
+
+/* =========================================================
+   ВЗАИМОДЕЙСТВИЕ
+   ========================================================= */
+
+function interact(){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  /*
+    Дверь из заднего двора в подвал.
+    Она открывается только после завершения
+    заднего двора.
+    Теперь с плавным спуском вместо телепорта.
+  */
+
+  if(
+    zi===4 &&
+    distance2D(
+      -10.25,1.25
+    )<2.15
+  ){
+
+    if(
+      !completed(4)
+    ){
+
+      showToast(
+        "Сначала полностью убери задний двор"
+      );
+
+      return;
+    }
+
+    // Плавный спуск в подвал
+    if(!window.basementDescentActive){
+      window.basementDescentActive = true;
+      window.basementDescentProgress = 0;
+      window.basementStartX = player.x;
+      window.basementStartZ = player.z;
+      window.basementStartY = player.y;
+      
+      showToast(
+        "Спускаешься в подвал..."
+      );
+    }
+
+    return;
+  }
+
+  /*
+    Выход из подвала через дверь.
+  */
+
+  if(
+    zi===5 &&
+    distance2D(
+      -30,-4.7
+    )<1.8
+  ){
+
+    player.x=-11.6;
+    player.z=1.25;
+
+    player.velocityX=0;
+    player.velocityZ=0;
+
+    if(completed(5)){
+
+      showToast(
+        "Калитка к бассейну теперь открыта"
+      );
+
+    }else{
+
+      showToast(
+        "Ты вернулся в задний двор"
+      );
+    }
+
+    return;
+  }
+
+  /*
+    Фото
+  */
+
+  for(let i=0;i<photos.length;i++){
+
+    const p=
+      photos[i];
+
+    if(
+      p.zone!==zi ||
+      save.photos[i]
+    ) continue;
+
+    if(
+      distance2D(
+        p.x,p.z
+      )<1.7 &&
+      lookingAt(
+        p.x,p.z,
+        1.85,
+        .05
+      )
+    ){
+
+      save.photos[i]=true;
+      save.coins+=15;
+
+      store();
+
+      showToast(
+        `Найдена фотография: «${p.name}» · +15 монет`
+      );
+
+      return;
+    }
+  }
+
+  /*
+    Контейнер
+  */
+
+  depositLeaves();
+}
+
+function throwBag(){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  const bin=
+    bins[zi];
+
+  if(
+    player.bagByZone[zi]>0 &&
+    distance2D(
+      bin.x,bin.z
+    )<2.8 &&
+    lookingAt(
+      bin.x,bin.z,
+      3,
+      .25
+    )
+  ){
+
+    depositLeaves();
+
+  }else{
+
+    showToast(
+      "Подойди к контейнеру своей зоны и направь взгляд на него"
+    );
+  }
+}
+
+/* =========================================================
+   ПОДСКАЗКИ
+   ========================================================= */
+
+function hintText(){
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return "";
+
+  if(
+    zi===4 &&
+    distance2D(
+      -10.25,1.25
+    )<2.4
+  ){
+
+    return completed(4)
+      ? "E — войти в подвал"
+      : "Подвал закрыт: сначала полностью убери задний двор";
+  }
+
+  if(
+    zi===5 &&
+    distance2D(
+      -30,-3.7
+    )<2.5
+  ){
+
+    return "E — вернуться в задний двор";
+  }
+
+  for(let i=0;i<photos.length;i++){
+
+    const p=
+      photos[i];
+
+    if(
+      p.zone===zi &&
+      !save.photos[i] &&
+      distance2D(
+        p.x,p.z
+      )<1.85
+    ){
+
+      return "E — подобрать спрятанную фотографию";
+    }
+  }
+
+  const bin=
+    bins[zi];
+
+  if(
+    distance2D(
+      bin.x,bin.z
+    )<2.5
+  ){
+
+    if(
+      player.bagByZone[zi]>0
+    ){
+
+      return "E или ПКМ — сдать листья в контейнер этой зоны";
+    }
+
+    return "Контейнер для листьев этой территории";
+  }
+
+  for(const g of GATES){
+
+    const near=
+      g.axis==="x"
+      ?
+        (
+          Math.abs(
+            player.x-g.at
+          )<2.4 &&
+          Math.abs(
+            player.z-g.mid
+          )<2.5
+        )
+      :
+        (
+          Math.abs(
+            player.z-g.at
+          )<2.4 &&
+          Math.abs(
+            player.x-g.mid
+          )<2.5
+        );
+
+    if(!near)
+      continue;
+
+    if(
+      !gateIsOpen(g)
+    ){
+
+      return (
+        `Калитка закрыта: полностью убери «${ZONES[g.needs].name}»`
+      );
+    }
+
+    return (
+      `Калитка открыта · ${g.label.toLowerCase()}`
+    );
+  }
+
+  if(
+    bagTotal()>=
+    bagCapacity()
+  ){
+
+    return "Мешок полон — отнеси листья в контейнер этой зоны";
+  }
+
+  if(player.tool===0){
+
+    return "ЛКМ — собирать листья руками";
+  }
+
+  if(player.tool===1){
+
+    return "Грабли только сгребают листья по земле. Для сбора переключись на руки [1]";
+  }
+
+  if(player.tool===2){
+
+    return "Воздуходувка перемещает листья вперёд по земле";
+  }
+
+  if(player.tool===3){
+
+    return "Листозаборник подбирает ближайшие листья перед соплом";
+  }
+
+  return "";
+}
+
+/* =========================================================
+   HUD
+   ========================================================= */
+
+function renderHUD(){
+
+  let zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    zi=0;
+
+  const zone=
+    ZONES[zi];
+
+  document.querySelector(
+    "#zone"
+  ).textContent=
+    `${zone.number}. ${zone.name}`;
+
+  document.querySelector(
+    "#goal"
+  ).textContent=
+    completed(zi)
+    ?
+      "Территория полностью сдана"
+    :
+      "Собери все листья и сдай их в контейнер";
+
+  const percent=
+    Math.min(
+      100,
+      save.deposited[zi]/
+      zone.leaves*
+      100
+    );
+
+  document.querySelector(
+    "#progress"
+  ).style.width=
+    `${percent}%`;
+
+  const toolNames=[
+    "руки",
+    "грабли",
+    "воздуходувка",
+    "листозаборник"
+  ];
+
+  document.querySelector(
+    "#stats"
+  ).innerHTML=
+    `Сдано: <b>${save.deposited[zi]}/${zone.leaves}</b> · на земле: <b>${groundLeavesInZone(zi)}</b><br>`+
+    `В мешке: <b>${bagTotal()}/${bagCapacity()}</b> · из этой зоны: <b>${player.bagByZone[zi]}</b><br>`+
+    `Монеты: <b>${save.coins}</b> · инструмент: <b>${toolNames[player.tool]}</b> · силы: <b>${Math.round(player.stamina)}%</b>`;
+
+  document.querySelector(
+    "#hint"
+  ).textContent=
+    hintText();
+}
+
+/* =========================================================
+   МАГАЗИН
+   ========================================================= */
+
+const SHOP=[
+  {
+    key:"rake",
+    name:"Грабли",
+    text:"Сгребают листья физическим контактом по земле. Листья не попадают в мешок автоматически.",
+    base:80,
+    max:1
+  },
+  {
+    key:"rakeWidth",
+    name:"Ширина граблей",
+    text:"Увеличивает ширину и рабочий радиус граблей.",
+    base:110,
+    max:4
+  },
+  {
+    key:"blower",
+    name:"Воздуходувка",
+    text:"Толкает листья воздушным потоком.",
+    base:280,
+    max:1
+  },
+  {
+    key:"collector",
+    name:"Автоматическое сопло",
+    text:"Подбирает ближайший лист перед соплом прямо в мешок.",
+    base:480,
+    max:1
+  },
+  {
+    key:"bag",
+    name:"Вместимость мешка",
+    text:"+7 листьев к вместимости за каждый уровень.",
+    base:65,
+    max:5
+  }
+];
+
+function shopPrice(item){
+
+  const level=
+    save.upgrades[item.key]||0;
+
+  return Math.round(
+    item.base*
+    Math.pow(1.68,level)
+  );
+}
+
+function renderShop(){
+
+  document.querySelector(
+    "#shopCoins"
+  ).textContent=
+    save.coins;
+
+  const host=
+    document.querySelector(
+      "#shopRows"
+    );
+
+  host.replaceChildren();
+
+  for(const item of SHOP){
+
+    const level=
+      save.upgrades[item.key]||0;
+
+    const price=
+      shopPrice(item);
+
+    const row=
+      document.createElement(
+        "div"
+      );
+
+    row.className=
+      "row";
+
+    const text=
+      document.createElement(
+        "div"
+      );
+
+    text.innerHTML=
+      `<b>${item.name}</b><br>`+
+      `<small>${item.text}<br>`+
+      `Уровень ${level}/${item.max}</small>`;
+
+    const button=
+      document.createElement(
+        "button"
+      );
+
+    if(
+      level>=item.max
+    ){
+
+      button.textContent=
+        "Куплено";
+
+      button.disabled=true;
+
+    }else{
+
+      button.textContent=
+        `${price} монет`;
+
+      button.disabled=
+        save.coins<price;
+    }
+
+    button.onclick=()=>{
+
+      const current=
+        save.upgrades[item.key]||0;
+
+      if(
+        current>=item.max
+      ) return;
+
+      const cost=
+        shopPrice(item);
+
+      if(
+        save.coins<cost
+      ) return;
+
+      save.coins-=cost;
+
+      save.upgrades[item.key]=
+        current+1;
+
+      store();
+
+      renderShop();
+      renderHUD();
+      refreshTool();
+
+      showToast(
+        `Куплено: ${item.name}`
+      );
+    };
+
+    row.append(
+      text,
+      button
+    );
+
+    host.append(
+      row
+    );
+  }
+}
+
+/* =========================================================
+   ЖУРНАЛ
+   ========================================================= */
+
+function renderJournal(){
+
+  document
+    .querySelectorAll(
+      "[data-tab]"
+    )
+    .forEach(btn=>{
+
+      btn.classList.toggle(
+        "active",
+        btn.dataset.tab===
+        journalTab
+      );
+    });
+
+  const body=
+    document.querySelector(
+      "#journalBody"
+    );
+
+  if(
+    journalTab==="quests"
+  ){
+
+    body.innerHTML=
+      ZONES.map(
+        (z,i)=>{
+
+          let state;
+
+          if(completed(i)){
+
+            state=
+              "✓ Выполнено";
+
+          }else if(
+            i<=unlockedIndex()
+          ){
+
+            state=
+              `${save.deposited[i]}/${z.leaves}`;
+
+          }else{
+
+            state=
+              "Закрыто";
+          }
+
+          return (
+            `<div class="row">`+
+            `<div><b>${z.number}. ${z.name}</b><br>`+
+            `<small>${state}</small></div>`+
+            `<b>${Math.round(save.deposited[i]/z.leaves*100)}%</b>`+
+            `</div>`
+          );
+        }
+      ).join("");
+
+  }else if(
+    journalTab==="photos"
+  ){
+
+    body.innerHTML=
+      `<p>Найдено <b>${save.photos.filter(Boolean).length}/8</b>. Они маленькие и спрятаны на предметах или поверхностях.</p>`+
+      `<div class="photos">`+
+      PHOTO_INFO.map(
+        (p,i)=>
+          `<div class="photo ${save.photos[i]?"":"locked"}">`+
+          `<b>${save.photos[i]?p.name:"Неизвестная находка"}</b><br>`+
+          `<small>${save.photos[i]?ZONES[p.zone].name:"Не найдена"}</small>`+
+          `</div>`
+      ).join("")+
+      `</div>`;
+
+  }else{
+
+    const achievements=[
+      [
+        "Первый мешок",
+        save.totalDeposited>0
+      ],
+      [
+        "Садовник",
+        !!save.upgrades.rake
+      ],
+      [
+        "Мастерская",
+        completed(1)
+      ],
+      [
+        "Под домом",
+        completed(5)
+      ],
+      [
+        "Коллекционер",
+        save.photos.every(Boolean)
+      ],
+      [
+        "Идеальный участок",
+        ZONES.every(
+          (_,i)=>completed(i)
+        )
+      ]
+    ];
+
+    body.innerHTML=
+      achievements.map(
+        ([name,done])=>
+          `<div class="row"><div>${done?"✓":"○"} ${name}</div></div>`
+      ).join("");
+  }
+}
+
+/* =========================================================
+   ПАНЕЛИ
+   ========================================================= */
+
+function togglePanel(name){
+
+  const target=
+    document.querySelector(
+      `#${name}`
+    );
+
+  if(
+    panelOpen===name
+  ){
+
+    target.style.display=
+      "none";
+
+    panelOpen=null;
+
+    // На мобильных не используем pointer lock
+    if(!isMobile){
+      paused=
+        !pointerLocked();
+    } else {
+      paused=false;
+    }
+
+    return;
+  }
+
+  if(panelOpen){
+
+    document.querySelector(
+      `#${panelOpen}`
+    ).style.display=
+      "none";
+  }
+
+  document.exitPointerLock?.();
+
+  panelOpen=name;
+  paused=true;
+
+  target.style.display=
+    "block";
+
+  if(name==="shop")
+    renderShop();
+
+  if(name==="journal")
+    renderJournal();
+}
+
+document
+  .querySelectorAll(
+    "[data-close]"
+  )
+  .forEach(btn=>{
+
+    btn.onclick=()=>{
+
+      if(panelOpen)
+        togglePanel(panelOpen);
+    };
+  });
+
+document
+  .querySelectorAll(
+    "[data-tab]"
+  )
+  .forEach(btn=>{
+
+    btn.onclick=()=>{
+
+      journalTab=
+        btn.dataset.tab;
+
+      renderJournal();
+    };
+  });
+
+/* =========================================================
+   DEV PANEL
+   ========================================================= */
+
+const localDev=
+  location.protocol==="file:" ||
+  location.hostname==="localhost" ||
+  location.hostname==="127.0.0.1";
+
+document.querySelector(
+  "#devCoins"
+).onclick=()=>{
+
+  save.coins+=500;
+  store();
+  renderHUD();
+
+  showToast(
+    "+500 тестовых монет"
+  );
+};
+
+document.querySelector(
+  "#devEnergy"
+).onclick=()=>{
+
+  player.stamina=100;
+  renderHUD();
+};
+
+document.querySelector(
+  "#devAllGates"
+).onclick=()=>{
+
+  // Открываем все калитки - устанавливаем листья для всех зон
+  for(let i=0;i<ZONES.length;i++){
+    save.deposited[i]=ZONES[i].leaves;
+  }
+  
+  store();
+  renderHUD();
+  
+  showToast(
+    "Все калитки открыты!"
+  );
+};
+
+document.querySelector(
+  "#devFinish"
+).onclick=()=>{
+
+  const zi=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  if(zi<0)
+    return;
+
+  save.deposited[zi]=
+    ZONES[zi].leaves;
+
+  player.bagByZone[zi]=0;
+
+  for(const l of leaves){
+
+    if(l.home===zi)
+      l.active=false;
+  }
+
+  store();
+
+  updateLeafMatrices();
+  renderHUD();
+
+  showToast(
+    `DEV: завершена зона «${ZONES[zi].name}»`
+  );
+};
+
+document.querySelector(
+  "#devTeleport"
+).onclick=()=>{
+
+  const i=
+    unlockedIndex();
+
+  const z=
+    ZONES[i];
+
+  /*
+    Безопасная точка возле контейнера.
+  */
+
+  let tx=
+    (z.x1+z.x2)/2;
+
+  let tz=
+    (z.z1+z.z2)/2;
+
+  if(
+    blockedByObject(
+      tx,tz,.3
+    )
+  ){
+
+    tx=z.x1+1.5;
+    tz=z.z1+1.5;
+  }
+
+  player.x=tx;
+  player.z=tz;
+
+  player.velocityX=0;
+  player.velocityZ=0;
+
+  renderHUD();
+};
+
+document.querySelector(
+  "#devReset"
+).onclick=()=>{
+
+  if(
+    confirm(
+      "Удалить всё сохранение?"
+    )
+  ){
+
+    localStorage.removeItem(
+      SAVE_KEY
+    );
+
+    location.reload();
+  }
+};
+
+/* =========================================================
+   ИНСТРУМЕНТЫ
+   ========================================================= */
+
+function chooseTool(
+  tool
+){
+
+  if(
+    tool===1 &&
+    !save.upgrades.rake
+  ){
+
+    showToast(
+      "Грабли сначала нужно купить · Tab"
+    );
+
+    return;
+  }
+
+  if(
+    tool===2 &&
+    !save.upgrades.blower
+  ){
+
+    showToast(
+      "Воздуходувку сначала нужно купить · Tab"
+    );
+
+    return;
+  }
+
+  if(
+    tool===3 &&
+    !save.upgrades.collector
+  ){
+
+    showToast(
+      "Автоматическое сопло сначала нужно купить · Tab"
+    );
+
+    return;
+  }
+
+  player.tool=
+    tool;
+
+  refreshTool();
+
+  showToast(
+    [
+      "Руки",
+      "Грабли",
+      "Воздуходувка",
+      "Автоматический листозаборник"
+    ][tool]
+  );
+}
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+document.querySelector(
+  "#startBtn"
+).onclick=()=>{
+
+  started=true;
+
+  document.querySelector(
+    "#intro"
+  ).style.display=
+    "none";
+
+  paused=false;
+
+  // На мобильных pointer lock не нужен
+  if(!isMobile){
+    renderer.domElement.requestPointerLock();
+  }
+};
+
+renderer.domElement.addEventListener(
+  "click",
+  ()=>{
+
+    if(
+      started &&
+      !panelOpen &&
+      !pointerLocked() &&
+      !isMobile  // На мобильных не используем pointer lock
+    ){
+
+      renderer.domElement.requestPointerLock();
+    }
+  }
+);
+
+document.addEventListener(
+  "pointerlockchange",
+  ()=>{
+
+    if(!panelOpen){
+      // На мобильных не используем pointer lock, поэтому не ставим на паузу
+      if(!isMobile){
+        paused=
+          !pointerLocked();
+      }
+    }
+  }
+);
+
+document.addEventListener(
+  "mousemove",
+  e=>{
+
+    if(
+      isMobile ||  // На мобильных управление через touch
+      !pointerLocked() ||
+      panelOpen
+    ) return;
+
+    player.yaw-=
+      e.movementX*.0022;
+
+    player.pitch=
+      Math.max(
+        -1.25,
+        Math.min(
+          1.25,
+          player.pitch-
+          e.movementY*.0022
+        )
+      );
+  }
+);
+
+document.addEventListener(
+  "mousedown",
+  e=>{
+
+    if(
+      isMobile ||  // На мобильных управление через кнопки
+      !pointerLocked() ||
+      panelOpen
+    ) return;
+
+    if(e.button===0){
+      mouseDown=true;
+      mouseClicked=true; // Отмечаем клик
+    }
+
+    if(e.button===2){
+
+      e.preventDefault();
+      throwBag();
+    }
+  }
+);
+
+document.addEventListener(
+  "mouseup",
+  e=>{
+
+    if(e.button===0){
+      mouseDown=false;
+      mouseClicked=false; // Сбрасываем флаг клика
+    }
+  }
+);
+
+document.addEventListener(
+  "contextmenu",
+  e=>e.preventDefault()
+);
+
+document.addEventListener(
+  "keydown",
+  e=>{
+
+    if(
+      [
+        "Tab",
+        "Space",
+        "ArrowUp",
+        "ArrowDown"
+      ].includes(e.code)
+    ){
+      e.preventDefault();
+    }
+
+    if(
+      e.repeat &&
+      [
+        "Tab",
+        "KeyJ",
+        "KeyE",
+        "Digit1",
+        "Digit2",
+        "Digit3",
+        "Digit4"
+      ].includes(e.code)
+    ){
+      return;
+    }
+
+    if(e.code==="Tab"){
+
+      togglePanel(
+        "shop"
+      );
+
+      return;
+    }
+
+    if(e.code==="KeyJ"){
+
+      togglePanel(
+        "journal"
+      );
+
+      return;
+    }
+
+    // Секретная комбинация для открытия админ-панели: нажать End три раза быстро
+    if(e.code==="End" && localDev){
+      const now = Date.now();
+      if(!window.devKeyPresses) window.devKeyPresses = [];
+      window.devKeyPresses.push(now);
+      
+      // Удаляем старые нажатия (старше 1 секунды)
+      window.devKeyPresses = window.devKeyPresses.filter(t => now - t < 1000);
+      
+      // Если 3 нажатия за секунду - открываем панель
+      if(window.devKeyPresses.length >= 3){
+        togglePanel("dev");
+        window.devKeyPresses = [];
+        return;
+      }
+    }
+
+    if(panelOpen)
+      return;
+
+    keys.add(e.code);
+
+    if(e.code==="Digit1")
+      chooseTool(0);
+
+    if(e.code==="Digit2")
+      chooseTool(1);
+
+    if(e.code==="Digit3")
+      chooseTool(2);
+
+    if(e.code==="Digit4")
+      chooseTool(3);
+
+    if(e.code==="KeyE")
+      interact();
+
+    if(e.code==="KeyQ")
+      throwBag();
+  }
+);
+
+document.addEventListener(
+  "keyup",
+  e=>{
+
+    keys.delete(
+      e.code
+    );
+  }
+);
+
+window.addEventListener(
+  "blur",
+  ()=>{
+
+    keys.clear();
+    mouseDown=false;
+  }
+);
+
+/* =========================================================
+   ANIMATION
+   ========================================================= */
+
+let lastTime=
+  performance.now();
+
+function update(
+  dt,time
+){
+
+  /*
+    Плавная анимация спуска в подвал
+  */
+  if(window.basementDescentActive){
+    window.basementDescentProgress += dt * 0.5; // 2 секунды на спуск
+    
+    const t = Math.min(1, window.basementDescentProgress);
+    const easedT = t * t * (3 - 2 * t); // Smooth easing
+    
+    // Интерполяция позиции
+    player.x = window.basementStartX + (-30 - window.basementStartX) * easedT;
+    player.z = window.basementStartZ + (6.5 - window.basementStartZ) * easedT;
+    player.y = window.basementStartY - 2.6 * easedT; // Спуск по высоте
+    
+    // Автоматический поворот камеры вниз
+    camera.rotation.x = Math.min(0.3, easedT * 0.4);
+    
+    if(t >= 1){
+      window.basementDescentActive = false;
+      window.basementDescentJustFinished = true; // Флаг для разблокировки
+      player.velocityX = 0;
+      player.velocityZ = 0;
+      camera.rotation.x = 0;
+      
+      showToast("Ты спустился в подвал");
+    }
+    
+    // Блокируем управление во время спуска
+    paused = true;
+    return; // Выход из update пока идёт анимация
+  }
+  
+  if(window.basementDescentJustFinished){
+    // Разблокируем управление после завершения спуска
+    window.basementDescentJustFinished = false;
+    paused = false;
+  }
+
+  /*
+    Анимация калиток.
+  */
+
+  for(const g of GATES){
+
+    const open=
+      gateIsOpen(g);
+
+    for(const panel of g.panels){
+
+      const target=
+        panel.closed+
+        panel.side*
+        (
+          open
+          ? g.width*.53
+          : 0
+        );
+
+      const amount=
+        Math.min(
+          1,
+          dt*4.2
+        );
+
+      if(g.axis==="x"){
+
+        panel.group.position.z+=
+          (
+            target-
+            panel.group.position.z
+          )*
+          amount;
+
+      }else{
+
+        panel.group.position.x+=
+          (
+            target-
+            panel.group.position.x
+          )*
+          amount;
+      }
+    }
+  }
+
+  /*
+    В подвале потолок скрываем со стороны камеры,
+    чтобы не было огромного чёрного артефакта.
+  */
+
+  // Показываем потолок только когда игрок в подвале
+  basementCeiling.visible=
+    zoneAt(
+      player.x,
+      player.z
+    )===5;
+
+  /*
+    Обновляем лист под прицелом для подсветки и сбора.
+  */
+  updateHoveredLeaf();
+
+  if(!paused){
+
+    const forwardInput=
+      (
+        keys.has("KeyW")
+        ?1:0
+      )-
+      (
+        keys.has("KeyS")
+        ?1:0
+      );
+
+    const sideInput=
+      (
+        keys.has("KeyD")
+        ?1:0
+      )-
+      (
+        keys.has("KeyA")
+        ?1:0
+      );
+
+    const mag=
+      Math.hypot(
+        forwardInput,
+        sideInput
+      )||1;
+
+    const running=
+      (
+        keys.has("ShiftLeft") ||
+        keys.has("ShiftRight")
+      ) &&
+      player.stamina>2 &&
+      (
+        forwardInput ||
+        sideInput
+      );
+
+    const speed=
+      running
+      ?5.8
+      :3.25;
+
+    const f=
+      lookDirection();
+
+    /*
+      Правый вектор относительно взгляда:
+      right = (-fz, fx)
+    */
+
+    const rightX=
+      -f.z;
+
+    const rightZ=
+      f.x;
+
+    // Целевая скорость движения в горизонтальной плоскости
+    // W/S = вперёд/назад по направлению yaw (горизонтальный угол камеры)
+    // A/D = влево/вправо перпендикулярно yaw
+    // Pitch (вертикальный угол) НЕ влияет на движение
+    
+    const targetVX=
+      (
+        f.x*
+        forwardInput+
+        rightX*
+        sideInput
+      )/
+      mag*
+      speed;
+
+    const targetVZ=
+      (
+        f.z*
+        forwardInput+
+        rightZ*
+        sideInput
+      )/
+      mag*
+      speed;
+
+    const acceleration=
+      1-
+      Math.exp(
+        -dt*
+        (
+          running
+          ?5
+          :7.5
+        )
+      );
+
+    player.velocityX+=
+      (
+        targetVX-
+        player.velocityX
+      )*
+      acceleration;
+
+    player.velocityZ+=
+      (
+        targetVZ-
+        player.velocityZ
+      )*
+      acceleration;
+
+    if(
+      !forwardInput &&
+      !sideInput
+    ){
+
+      const slow=
+        Math.exp(
+          -8.5*dt
+        );
+
+      player.velocityX*=
+        slow;
+
+      player.velocityZ*=
+        slow;
+    }
+
+    movePlayer(
+      player.velocityX*dt,
+      player.velocityZ*dt
+    );
+
+    player.stamina=
+      Math.max(
+        0,
+        Math.min(
+          100,
+          player.stamina+
+          (
+            running
+            ?-22
+            :14
+          )*
+          dt
+        )
+      );
+
+    /*
+      Раскачка.
+    */
+
+    const movementSpeed=
+      Math.hypot(
+        player.velocityX,
+        player.velocityZ
+      );
+
+    player.bob+=
+      dt*
+      movementSpeed*
+      (
+        running
+        ?3.0
+        :2.35
+      );
+
+    const verticalBob=
+      Math.sin(
+        player.bob*2
+      )*
+      Math.min(
+        .075,
+        movementSpeed*.013
+      );
+
+    const sideBob=
+      Math.sin(
+        player.bob
+      )*
+      Math.min(
+        .055,
+        movementSpeed*.009
+      );
+
+    camera.position.set(
+      player.x,
+      1.66+
+      verticalBob,
+      player.z
+    );
+
+    camera.rotation.y=
+      player.yaw;
+
+    camera.rotation.x=
+      player.pitch;
+
+    viewModel.position.x=
+      sideBob;
+
+    viewModel.position.y=
+      Math.abs(
+        Math.sin(
+          player.bob
+        )
+      )*
+      movementSpeed*.012;
+
+    viewModel.rotation.z=
+      Math.sin(
+        player.bob
+      )*
+      movementSpeed*.011;
+
+    /*
+      Использование инструмента.
+    */
+
+    player.actionCooldown-=
+      dt;
+
+    if(mouseDown){
+
+      if(
+        player.tool===0 &&
+        player.actionCooldown<=0 &&
+        mouseClicked  // Только по клику, не зажатию
+      ){
+
+        collectByHand();
+        mouseClicked=false; // Сбрасываем после сбора
+
+        player.actionCooldown=
+          .18;
+      }
+
+      if(
+        player.tool===1 &&
+        save.upgrades.rake
+      ){
+
+        rakeLeaves(
+          dt
+        );
+
+        /*
+          визуальный рабочий взмах
+        */
+
+        rakeGroup.rotation.x=
+          .12+
+          Math.sin(
+            time*9
+          )*.13;
+
+      }else{
+
+        rakeGroup.rotation.x*=
+          Math.exp(
+            -8*dt
+          );
+      }
+
+      if(
+        player.tool===2 &&
+        save.upgrades.blower
+      ){
+
+        blowLeaves(
+          dt
+        );
+
+        blowerGroup.position.x=
+          Math.sin(
+            time*40
+          )*.005;
+      }
+
+      if(
+        player.tool===3 &&
+        save.upgrades.collector &&
+        player.actionCooldown<=0
+      ){
+
+        collectorLeaves();
+
+        player.actionCooldown=
+          .14;
+      }
+
+    }else{
+
+      rakeGroup.rotation.x*=
+        Math.exp(
+          -8*dt
+        );
+
+      blowerGroup.position.x=
+        0;
+    }
+
+    simulateLeaves(
+      dt
+    );
+
+    updateLeafMatrices();
+
+    hudTimer-=dt;
+
+    if(
+      hudTimer<=0
+    ){
+
+      renderHUD();
+      hudTimer=.17;
+    }
+  }
+
+  /*
+    Интерактивная подсветка контейнеров.
+  */
+
+  const activeZone=
+    zoneAt(
+      player.x,
+      player.z
+    );
+
+  for(let i=0;i<bins.length;i++){
+
+    const b=
+      bins[i];
+
+    const close=
+      activeZone===i &&
+      distance2D(
+        b.x,b.z
+      )<2.5;
+
+    const glow=
+      close
+      ?
+        .18+
+        .07*
+        Math.sin(
+          time*5
+        )
+      :
+        0;
+
+    b.body.material.emissive.setRGB(
+      .12*glow,
+      .45*glow,
+      .08*glow
+    );
+
+    b.rim.material.emissive.setRGB(
+      .3*glow,
+      .25*glow,
+      .08*glow
+    );
+  }
+
+  /*
+    Фото видимы всегда после открытия зоны,
+    но светятся только рядом.
+  */
+
+  for(let i=0;i<photos.length;i++){
+
+    const p=
+      photos[i];
+
+    const accessible=
+      p.zone<=
+      unlockedIndex() ||
+      p.zone===5 &&
+      completed(4);
+
+    p.group.visible=
+      !save.photos[i] &&
+      accessible;
+
+    const close=
+      p.group.visible &&
+      distance2D(
+        p.x,p.z
+      )<1.9;
+
+    p.frame.material.emissive.setHex(
+      close
+      ?0x59452f
+      :0x000000
+    );
+  }
+}
+
+/* =========================================================
+   LOOP
+   ========================================================= */
+
+function frame(
+  now
+){
+
+  const dt=
+    Math.min(
+      .05,
+      Math.max(
+        .001,
+        (now-lastTime)/1000
+      )
+    );
+
+  lastTime=now;
+
+  update(
+    dt,
+    now/1000
+  );
+
+  renderer.render(
+    scene,
+    camera
+  );
+
+  requestAnimationFrame(
+    frame
+  );
+}
+
+window.addEventListener(
+  "resize",
+  ()=>{
+
+    camera.aspect=
+      innerWidth/
+      innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+      innerWidth,
+      innerHeight
+    );
+  }
+);
+
+renderHUD();
+
+requestAnimationFrame(
+  frame
+);
+
+/* =========================================================
+   МОБИЛЬНАЯ АДАПТАЦИЯ
+   ========================================================= */
+
+if(isMobile){
+  console.log('🎮 Инициализация мобильного управления...');
+  
+  // Создаём контейнер для мобильных элементов управления
+  const mobileUI = document.createElement('div');
+  mobileUI.id = 'mobile-controls';
+  mobileUI.innerHTML = `
+    <style>
+      #mobile-controls {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      
+      .mobile-btn {
+        pointer-events: auto;
+        position: absolute;
+        background: rgba(0,0,0,0.5);
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-center;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      
+      .mobile-btn:active {
+        background: rgba(255,255,255,0.3);
+      }
+      
+      #joystick-zone {
+        position: absolute;
+        left: 20px;
+        bottom: 20px;
+        width: 140px;
+        height: 140px;
+        pointer-events: auto;
+      }
+      
+      #joystick-base {
+        position: absolute;
+        width: 140px;
+        height: 140px;
+        background: radial-gradient(circle, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+        border: 3px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+      }
+      
+      #joystick-stick {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: radial-gradient(circle, rgba(255,255,255,0.6), rgba(200,200,200,0.4));
+        border: 2px solid rgba(255,255,255,0.5);
+        border-radius: 50%;
+        left: 40px;
+        top: 40px;
+        transition: all 0.1s;
+      }
+      
+      #action-btns {
+        position: absolute;
+        right: 20px;
+        bottom: 20px;
+      }
+      
+      .action-btn {
+        width: 65px;
+        height: 65px;
+        margin: 8px;
+      }
+      
+      #tool-btns {
+        position: absolute;
+        right: 20px;
+        bottom: 180px;
+        display: flex;
+        gap: 8px;
+      }
+      
+      .tool-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 16px;
+      }
+      
+      #menu-btns {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 8px;
+      }
+      
+      .menu-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 14px;
+      }
+      
+      #camera-hint {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        font-size: 14px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      
+      @media (max-width: 768px) and (orientation: portrait) {
+        #joystick-zone { width: 120px; height: 120px; }
+        #joystick-base { width: 120px; height: 120px; }
+        #joystick-stick { left: 30px; top: 30px; }
+        .action-btn { width: 60px; height: 60px; font-size: 16px; }
+        .tool-btn { width: 50px; height: 50px; font-size: 14px; }
+      }
+    </style>
+    
+    <div id="joystick-zone">
+      <div id="joystick-base"></div>
+      <div id="joystick-stick"></div>
+    </div>
+    
+    <div id="action-btns">
+      <div class="mobile-btn action-btn" data-key="action">E</div>
+      <div class="mobile-btn action-btn" data-key="click">👆</div>
+      <div class="mobile-btn action-btn" data-key="drop">Q</div>
+    </div>
+    
+    <div id="tool-btns">
+      <div class="mobile-btn tool-btn" data-tool="0">1</div>
+      <div class="mobile-btn tool-btn" data-tool="1">2</div>
+      <div class="mobile-btn tool-btn" data-tool="2">3</div>
+    </div>
+    
+    <div id="menu-btns">
+      <div class="mobile-btn menu-btn" data-menu="shop">⚙</div>
+      <div class="mobile-btn menu-btn" data-menu="journal">📖</div>
+    </div>
+    
+    <div id="camera-hint">Свайп для осмотра</div>
+  `;
+  
+  document.body.appendChild(mobileUI);
+  
+  // === ВИРТУАЛЬНЫЙ ДЖОЙСТИК ===
+  const joystickZone = document.getElementById('joystick-zone');
+  const joystickStick = document.getElementById('joystick-stick');
+  const joystickRadius = 40;
+  
+  let joystickActive = false;
+  let joystickCenterX = 0;
+  let joystickCenterY = 0;
+  
+  function handleJoystickStart(e){
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    const rect = joystickZone.getBoundingClientRect();
+    joystickCenterX = rect.left + rect.width / 2;
+    joystickCenterY = rect.top + rect.height / 2;
+    joystickActive = true;
+    handleJoystickMove(e);
+  }
+  
+  function handleJoystickMove(e){
+    if(!joystickActive) return;
+    e.preventDefault();
+    
+    const touch = e.touches ? e.touches[0] : e;
+    let dx = touch.clientX - joystickCenterX;
+    let dy = touch.clientY - joystickCenterY;
+    
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if(distance > joystickRadius){
+      dx = (dx / distance) * joystickRadius;
+      dy = (dy / distance) * joystickRadius;
+    }
+    
+    joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Обновляем клавиатурные нажатия
+    keys.KeyW = dy < -10;
+    keys.KeyS = dy > 10;
+    keys.KeyA = dx < -10;
+    keys.KeyD = dx > 10;
+  }
+  
+  function handleJoystickEnd(e){
+    e.preventDefault();
+    joystickActive = false;
+    joystickStick.style.transform = 'translate(0, 0)';
+    keys.KeyW = keys.KeyS = keys.KeyA = keys.KeyD = false;
+  }
+  
+  joystickZone.addEventListener('touchstart', handleJoystickStart, {passive:false});
+  joystickZone.addEventListener('touchmove', handleJoystickMove, {passive:false});
+  joystickZone.addEventListener('touchend', handleJoystickEnd, {passive:false});
+  
+  // === УПРАВЛЕНИЕ КАМЕРОЙ (СВАЙП ПО ЭКРАНУ) ===
+  let cameraTouch = null;
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+  
+  const cameraHint = document.getElementById('camera-hint');
+  let hintShown = false;
+  
+  function showCameraHint(){
+    if(!hintShown){
+      cameraHint.style.opacity = '1';
+      setTimeout(() => {
+        cameraHint.style.opacity = '0';
+        hintShown = true;
+      }, 2000);
+    }
+  }
+  
+  document.addEventListener('touchstart', (e) => {
+    if(e.target.closest('#mobile-controls')) return;
+    if(e.touches.length === 1){
+      cameraTouch = e.touches[0].identifier;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+      showCameraHint();
+    }
+  }, {passive: true});
+  
+  document.addEventListener('touchmove', (e) => {
+    if(cameraTouch === null) return;
+    
+    for(let touch of e.touches){
+      if(touch.identifier === cameraTouch){
+        const dx = touch.clientX - lastTouchX;
+        const dy = touch.clientY - lastTouchY;
+        
+        player.yaw -= dx * mobile.sensitivity;
+        player.pitch -= dy * mobile.sensitivity;
+        player.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, player.pitch));
+        
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+        break;
+      }
+    }
+  }, {passive: true});
+  
+  document.addEventListener('touchend', (e) => {
+    for(let touch of e.changedTouches){
+      if(touch.identifier === cameraTouch){
+        cameraTouch = null;
+        break;
+      }
+    }
+  }, {passive: true});
+  
+  // === КНОПКИ ДЕЙСТВИЙ ===
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const key = btn.dataset.key;
+      
+      if(key === 'action'){
+        keys.KeyE = true;
+        setTimeout(() => { keys.KeyE = false; }, 100);
+      } else if(key === 'click'){
+        mouseDown = true;
+        mouseClicked = true;
+        setTimeout(() => { 
+          mouseDown = false;
+          mouseClicked = false;
+        }, 150);
+      } else if(key === 'drop'){
+        keys.KeyQ = true;
+        setTimeout(() => { keys.KeyQ = false; }, 100);
+      }
+    }, {passive: false});
+  });
+  
+  // === КНОПКИ ИНСТРУМЕНТОВ ===
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const tool = parseInt(btn.dataset.tool);
+      player.tool = tool;
+      
+      // Визуальная обратная связь
+      document.querySelectorAll('.tool-btn').forEach(b => {
+        b.style.background = 'rgba(0,0,0,0.5)';
+      });
+      btn.style.background = 'rgba(100,150,255,0.7)';
+    }, {passive: false});
+  });
+  
+  // === КНОПКИ МЕНЮ ===
+  document.querySelectorAll('.menu-btn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const menu = btn.dataset.menu;
+      
+      if(menu === 'shop'){
+        keys.Tab = true;
+        setTimeout(() => { keys.Tab = false; }, 100);
+      } else if(menu === 'journal'){
+        keys.KeyJ = true;
+        setTimeout(() => { keys.KeyJ = false; }, 100);
+      }
+    }, {passive: false});
+  });
+  
+  // === ОПТИМИЗАЦИЯ ПРОИЗВОДИТЕЛЬНОСТИ ДЛЯ МОБИЛЬНЫХ ===
+  if(isMobile){
+    // Снижаем качество теней
+    renderer.shadowMap.enabled = false;
+    
+    // Уменьшаем разрешение на слабых устройствах
+    if(!isTablet){
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    }
+    
+    // Оптимизируем обновление листьев
+    const originalUpdateLeafMatrices = updateLeafMatrices;
+    let leafUpdateCounter = 0;
+    updateLeafMatrices = function(){
+      leafUpdateCounter++;
+      if(leafUpdateCounter % 2 === 0){ // Обновляем каждый второй кадр
+        originalUpdateLeafMatrices();
+      }
+    };
+    
+    console.log('✅ Мобильная оптимизация применена');
+  }
+  
+  // Показываем подсказку при первом запуске
+  setTimeout(showCameraHint, 1000);
+}
+
+// === АДАПТИВНЫЙ ИНТЕРФЕЙС ===
+function updateUIForMobile(){
+  const stats = document.getElementById('stats');
+  const hint = document.getElementById('hint');
+  
+  if(isMobile && stats){
+    stats.style.fontSize = isTablet ? '13px' : '11px';
+    stats.style.padding = '8px';
+  }
+  
+  if(isMobile && hint){
+    hint.style.fontSize = isTablet ? '12px' : '10px';
+    hint.style.padding = '6px 10px';
+  }
+  
+  // Адаптация панелей
+  const panels = document.querySelectorAll('.panel');
+  panels.forEach(panel => {
+    if(isMobile){
+      panel.style.maxWidth = isTablet ? '500px' : '90%';
+      panel.style.fontSize = isTablet ? '14px' : '13px';
+    }
+  });
+}
+
+if(isMobile){
+  updateUIForMobile();
+  window.addEventListener('resize', updateUIForMobile);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(updateUIForMobile, 200);
+  });
+}
+
+</script>
+</body>
+</html>
